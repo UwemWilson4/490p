@@ -1,34 +1,35 @@
 import math
 import numpy as np
-from numpy.linalg import inv, det
+from numpy.linalg import pinv, det
 from eva import EvaProgram, Input, Output
 
-y = [1, 1, 0, 0]
+y = [1, 1, 0, 0, 1, 1, 0, 0, 0, 0]
 def gen_fake_data():
 	result = []
 	for i in range(10):
 		if i < 2:
-			result.append([0, 2, 1, 1, 3, 0, 1, 2, 3, 0])
+			result.append([0, 2, 1, 1, 3, 0, 1, 2,])
 		elif i >= 2 and i < 5:
-			result.append([1, 1, 3, 0, 2, 0, 1, 3, 1, 0])
+			result.append([1, 1, 3, 0, 2, 0, 1, 3,])
 		elif i >= 5 and i < 7:
-			result.append([0, 1, 2, 1, 2, 3, 3, 1, 2, 1])
+			result.append([0, 1, 2, 1, 2, 3, 3, 1,])
 		elif i >= 7 and i < 9:
-			result.append([0, 3, 0, 2, 3, 0, 2, 3, 1, 3])
-		else:
-			result.append([0, 0, 3, 2, 1, 3, 0, 3, 2, 1])
+			result.append([0, 3, 0, 2, 3, 0, 2, 3,])
 
 	return np.matrix(result[:])
 
 
 
 # sigmoid function needed for the logistic regression algorithm
+def np_sigmoid_func(x):
+	return 0.5 - np.dot(1.73496, np.dot(x, (1/8))) + np.dot(4.19407, np.dot(x, (1/8))**3) - np.dot(5.43402, np.dot(x, (1/8))**5) + np.dot(2.50739, np.dot(x, (1/8))**7)
+
 def sigmoid_func(x):
 	return 0.5 - 1.73496*(x / 8) + 4.19407*((x / 8)**3) - 5.43402*((x / 8)**5) + 2.50739*((x / 8)**7)
 
-beta_weights = [0.4, 0.5, 0.8]
-num_rows = 3
-num_cols = 2
+beta_weights = [0 for i in range(8)]
+num_rows = 8
+num_cols = 8
 
 """Performs a rotation of a to the left by l. The EVA documentation does not specify
    this explicitly as the was to perform rotations, but examples in the code support
@@ -37,7 +38,6 @@ def rotate(a, l):
 	return a << l
 
 log_reg = EvaProgram('log_reg', 8*8)
-"""
 with log_reg:
 	y = Input('y')
 	B = Input('beta_weights')
@@ -56,6 +56,7 @@ with log_reg:
 				temp_ciphertext += rotate(temp_ciphertext, 2**j)
 
 			replicate_res[i] = temp_ciphertext
+			print(replicate_res)
 
 		# Output the result of replication for testing purposes
 		# Output('Replicated', replicate_res)
@@ -112,30 +113,24 @@ with log_reg:
 
 	# Output final beta weights for testing
 	Output('beta_weights_final', B)
-"""
+
 
 
 def test_no_enc():
 	# generate fake data and outcome vector
 	data = gen_fake_data()
-	#print(det(data))
 	data = data.T
-	print(det(data))
-	print(data)
-	y_t = np.array(y).T
+	y_m = np.reshape(np.matrix(y, dtype=int), (len(data), 1))
 	num_rows = len(data)
-	print(data.shape[1])
 	num_cols = data.shape[1]
 	beta_weights = np.zeros((num_cols, 1), dtype=int)
-	print(f'num_rows: {num_rows}\nnum_cols: {num_cols}\nbeta_weights: {beta_weights}\nY: {y_t}\n')
+	print(f'num_rows: {num_rows}\nnum_cols: {num_cols}\nbeta_weights: {beta_weights}\nY: {y_m}\n')
 
 	for i in range(num_rows):
-		p = np.matmul(data, beta_weights)
-		print(p)
-		g = np.matmul(data.T, (y - p))
+		p = np.dot(data, beta_weights)
+		g = np.matmul(data.T, (y_m - p))
 		xt_x = np.matmul(data.T, data)
-		print(xt_x, det(xt_x))
-		h_approx = (1/4) * (np.matmul(data.T, data))
+		h_approx = 4 * pinv(np.matmul(data.T, data))
 		b_new = beta_weights - (np.matmul(h_approx, g))
 		beta_weights = b_new
 
@@ -144,6 +139,13 @@ def test_no_enc():
 
 if __name__ == '__main__':
 	test_no_enc()
+
+	log_reg.set_input_scales(30)
+	log_reg.set_output_ranges(30)
+
+	compiler = CKKSCompiler()
+	compiled_log_reg, params, signature = compiler.compile(log_reg)
+
 
 
 
