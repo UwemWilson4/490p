@@ -70,9 +70,11 @@ def mat_vec_mult(mat, vec):
 	return mat_vec_result
 
 def cp_mat_mult(matA, matB):
-	result = [None for _ in range(len(matB))]
-	for i in range(len(matB)):
-		result[i] = mat_vec_result(matA, matB[i])
+	n = len(matB)
+	result = [None for _ in range(n)]
+	for i in range(n):
+		replicated_bi = replicate(n, matB[i])
+		result[i] = mat_vec_mult(matA, replicated_bi)
 
 	return result
 
@@ -88,10 +90,10 @@ def he_log_reg(input_matrix, beta_weights, y):
 		print(B.term)
 		Output('test', B)
 		# Compute hessian approximation before entering the loop
-		xxti_cols = [Input(f'xxti_{i}') for i in range(d)]
-		hessian_inverse_approx = [i * 4 for i in xxti_cols]
+		xtxi_cols = [Input(f'xtxi_{i}') for i in range(d)]
+		hessian_inverse_approx = [i * 4 for i in xtxi_cols]
 		# Algorithm for logistic regression
-		for k in range(16):
+		for k in range(2):
 			# Replicate the beta_weights input
 			num_weights = len(beta_weights)
 			# For multiplications involving B
@@ -162,9 +164,9 @@ def he_log_reg(input_matrix, beta_weights, y):
 
 	inputs = {}
 	# The the transpose to more easily get to the cols
-	xxti_t = pinv(np.matmul(input_matrix.T, input_matrix)).T
-	for index, row in enumerate(xxti_t):
-		inputs[f'xxti_{index}'] = row.tolist()[0]
+	xtxi_t = pinv(np.matmul(input_matrix.T, input_matrix)).T
+	for index, row in enumerate(xtxi_t):
+		inputs[f'xtxi_{index}'] = row.tolist()[0]
 	a = [elem for row in input_matrix for elem in row]
 	inputs['beta_weights'] = beta_weights
 	inputs['y'] = y
@@ -187,53 +189,112 @@ def he_log_reg(input_matrix, beta_weights, y):
 	#print(outputs['test2'])
 	print("\n\n")
 
+	return outputs
+
+# Finds the smallest power of 2 greater than or equal to x
+def power_bit_length(x):
+	return 2**(x-1).bit_length()
+
+# Suppose that vec has k filled slots and n - k unfilled slots. 
+# duplicated duplicates the k filled slots throughout the rest
+# of vec
+def duplicate(n, k, vec):
+	result = 0
+	for i in range(math.log(n / power_bit_length(k), 2) - 1):
+		result += rotate(vec, power_bit_length(k))
+
+def cp_rep_mat_mult(n, matA, matB):
+	result = 0
+	for i in range(n):
+		result += matA[i] * matB[i]
+
+	return result
+
 def inverse_slots(w, n):
 	guess = [3 for _ in range(n)]
 	for i in range(3):
-		w_i = 2 - w * guess
+		w_i = 2 + -(w * guess)
 		guess = w_i
+
 	return guess
 
-# Assume that we want X, S, and x_xt_i to be column-packed. This means
+# Assume that we want X, S, and xt_x_i to be column-packed. This means
 # that we have to pass in transposes so that columns are rows. 
-def hom_gwas(X, beta, y, p, x_xt_i, xt, S):
+def hom_gwas(X, beta, y, p, xt_x_i, xt, S):
 	d = len(beta)
+	assert(len(beta) == X.shape[0])
+	assert(len(beta) == len(y))
+	assert(len(beta) == len(p)) 
+
+	# Identity matrix used in gwas
+	id_matrix = np.identity(d, dtype=int)
+	print(id_matrix)
+	# X transpose
+	xt = X.T
+
 	gwas = EvaProgram('gwas', vec_size=d)
 	with gwas:
 		_X = [Input(f'x{i}') for i in range(d)]
+		_xt = [Input(f'xt_{i}') for i in range(d)]
+		_xtxi = [Input(f'xtxi_{i}') for i in range(d)]
+		_id = [Input(f'id_{i}') for i in range(d)]
 		_beta = Input('beta')
 		_y = Input('y')
 		_p = Input('p')
 
 		w = _p * (1 - _p)
 		# Calculate inverse slots
-		w_i = inverse_slots(w, len(p))
+		w_i = inverse_slots(w, d)
 		replicated_beta = replicate(d, _beta)
 		z = mat_vec_mult(_X, replicated_beta) + w_i* (_y - _p)
+		#Output('z', w_i)
+		Output('z', z)
 
-		Output('Test', 0)
+		res = cp_mat_mult(_xtxi, _X)
+		res = cp_rep_mat_mult(d, res, _xt)
+		Output('res', res)
+		replicated_z = replicate(d, z)
+		iz = mat_vec_mult(_id, replicated_z)
+		resz = res * z
+		z_prime = iz - resz
+		Output('z_prime', z_prime)
+
+	gwas.set_input_scales(30)
+	gwas.set_output_ranges(30)
 
 	compiler = CKKSCompiler()
-	compiled_hom_gwas, params, signature = compiler.compile(hom_gwas)
+	compiled_gwas, params, signature = compiler.compile(gwas)
 
 	public_ctx, secret_ctx = generate_keys(params)
 
 	inputs = {'beta': beta, 'y': y, 'p': p}
 	for index, row in enumerate(X):
-		inputs[f'x{index}'] = row
-	for index, row in enumerate(S):
-		inputs[f's{index}'] = row
-	for index, row in enumerate(x_xt_i):
-		inputs[f'xxti_{index}'] = row
+		inputs[f'x{index}'] = row.tolist()[0]
+	for index, row in enumerate(xt):
+		inputs[f'xt_{index}'] = row.tolist()[0]
+	for index, row in enumerate(id_matrix):
+		inputs[f'id_{index}'] = row
+	#for index, row in enumerate(S):
+	#	inputs[f's{index}'] = row
+	for index, row in enumerate(xt_x_i):
+		inputs[f'xtxi_{index}'] = row.tolist()[0]
+	print(inputs)
 
 	encInputs = public_ctx.encrypt(inputs, signature)
-	encOutputs = public_ctx.execute(compiled_hom_gwas, encInputs)
+	encOutputs = public_ctx.execute(compiled_gwas, encInputs)
 	outputs = secret_ctx.decrypt(encOutputs, signature)
 
 	# Run the program on unencrypted inputs to get reference results
-	reference = evaluate(compiled_hom_gwas, inputs)
+	reference = evaluate(compiled_gwas, inputs)
+	print("Evaluated output:")
+	print(reference['z_prime'])
+	print("\n\n")
 
-
+	# Print actual outputs
+	print("Actual output:")
+	print(outputs['z_prime'])
+	#print(outputs['test2'])
+	print("\n\n")
 
 
 def test_no_enc():
@@ -260,7 +321,7 @@ def test_no_enc():
 
 
 if __name__ == '__main__':
-	d = 64
+	d = 8
 	matA = [[random.randint(0, 3) for _ in range(d)] for _ in range(d)]
 	matA = np.matrix(matA)
 	matB = [[random.randint(0, 3) for _ in range(d)] for _ in range(d)]
@@ -272,4 +333,7 @@ if __name__ == '__main__':
 	beta_weights = [0 for i in range(d)]
 	y = [random.randint(0, 1) for _ in range(d)]
 	print("Newton-Raphson with encryption:")
-	he_log_reg(matA, beta_weights, y)
+	# The the transpose to more easily get to the cols
+	xtxi_t = pinv(np.matmul(matA.T, matA)).T
+	outputs = he_log_reg(matA, beta_weights, y)
+	hom_gwas(matA, outputs['beta_weights_final'], y, outputs['SigmoidRes'], xtxi_t, matA.T, matB)
