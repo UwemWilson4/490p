@@ -252,13 +252,3 @@ if __name__ == '__main__':
 	y = [random.randint(0, 1) for _ in range(d)]
 	print("Newton-Raphson with encryption:")
 	he_log_reg(matA, beta_weights, y)
-
-	
-
-
-
-
-
-
-
-
