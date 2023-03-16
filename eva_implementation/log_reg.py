@@ -194,6 +194,8 @@ def inverse_slots(w, n):
 		guess = w_i
 	return guess
 
+# Assume that we want X, S, and x_xt_i to be column-packed. This means
+# that we have to pass in transposes so that columns are rows. 
 def hom_gwas(X, beta, y, p, x_xt_i, xt, S):
 	d = len(beta)
 	gwas = EvaProgram('gwas', vec_size=d)
@@ -210,7 +212,26 @@ def hom_gwas(X, beta, y, p, x_xt_i, xt, S):
 		z = mat_vec_mult(_X, replicated_beta) + w_i* (_y - _p)
 
 		Output('Test', 0)
-	inputs = {'X': X, 'beta': beta, 'y': y, 'S': S, 'p': p}
+
+	compiler = CKKSCompiler()
+	compiled_hom_gwas, params, signature = compiler.compile(hom_gwas)
+
+	public_ctx, secret_ctx = generate_keys(params)
+
+	inputs = {'beta': beta, 'y': y, 'p': p}
+	for index, row in enumerate(X):
+		inputs[f'x{index}'] = row
+	for index, row in enumerate(S):
+		inputs[f's{index}'] = row
+	for index, row in enumerate(x_xt_i):
+		inputs[f'xxti_{index}'] = row
+
+	encInputs = public_ctx.encrypt(inputs, signature)
+	encOutputs = public_ctx.execute(compiled_hom_gwas, encInputs)
+	outputs = secret_ctx.decrypt(encOutputs, signature)
+
+	# Run the program on unencrypted inputs to get reference results
+	reference = evaluate(compiled_hom_gwas, inputs)
 
 
 
