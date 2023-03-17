@@ -23,12 +23,8 @@ def gen_fake_data():
 	return np.matrix(result[:])
 
 
-def vec_from_pred(n, pred):
-    # Returns a vector v in {0,1}^n s.t.
-    # v[i] = pred(i)
-    return [1 if pred(ell) else 0 for ell in range(n)]
-
-# sigmoid function needed for the logistic regression algorithm
+# Sigmoid function needed for the logistic regression algorithm. np_sigmoid_func
+# is modified to work on np matrices. 
 def np_sigmoid_func(x):
 	return 0.5 - np.dot(1.73496, np.dot(x, (1/8))) + np.dot(4.19407, np.dot(x, (1/8))**3) - np.dot(5.43402, np.dot(x, (1/8))**5) + np.dot(2.50739, np.dot(x, (1/8))**7)
 
@@ -42,6 +38,9 @@ def sigmoid_func(x):
 def rotate(a, l):
 	return a << l
 
+"""The replicate function takes a vector encrypted as a ciphertext and outputs a vector
+	of ciphertexts, where each ciphertext is a replicate of vec. This corresponds to a what
+	would be a matrix with n columns that are all identical."""
 def replicate(n, vec):
 	replicate_res = [0 for i in range(n)]
 	one_vector = [0 for i in range(n)]
@@ -56,6 +55,8 @@ def replicate(n, vec):
 		replicate_res[i] = temp_ciphertext
 	return replicate_res
 
+"""Performs matrix-vector multiplication between a matrix, mat, in the form of an array of
+	columns and a replicated vector, vec."""
 def mat_vec_mult(mat, vec):
 	replicate_length = len(vec)
 	# The matrix-vector multiplication returns a ciphertext
@@ -69,6 +70,9 @@ def mat_vec_mult(mat, vec):
 
 	return mat_vec_result
 
+"""Performs matrix multiplication between two column-packed matrices. Matrices are
+	represented by matA and matB, which are lists of lists representing the columns of
+	matA and MatB."""
 def cp_mat_mult(matA, matB):
 	n = len(matB)
 	result = [None for _ in range(n)]
@@ -78,7 +82,7 @@ def cp_mat_mult(matA, matB):
 
 	return result
 
-def he_log_reg(input_matrix, beta_weights, y):
+def he_log_reg(input_matrix, xtxi_t, beta_weights, y):
 	num_rows = len(input_matrix)
 	num_cols = len(input_matrix[0])
 	d = num_rows
@@ -164,7 +168,6 @@ def he_log_reg(input_matrix, beta_weights, y):
 
 	inputs = {}
 	# The the transpose to more easily get to the cols
-	xtxi_t = pinv(np.matmul(input_matrix.T, input_matrix)).T
 	for index, row in enumerate(xtxi_t):
 		inputs[f'xtxi_{index}'] = row.tolist()[0]
 	a = [elem for row in input_matrix for elem in row]
@@ -241,6 +244,7 @@ def hom_gwas(X, beta, y, p, xt_x_i, xt, S):
 		_beta = Input('beta')
 		_y = Input('y')
 		_p = Input('p')
+		_S = [Input(f's{i}') for i in range(d)]
 
 		w = _p * (1 - _p)
 		# Calculate inverse slots
@@ -252,12 +256,27 @@ def hom_gwas(X, beta, y, p, xt_x_i, xt, S):
 
 		res = cp_mat_mult(_xtxi, _X)
 		res = cp_rep_mat_mult(d, res, _xt)
+		# Replicate res so that we can calculate M
+		replicated_res = replicate(d, res)
 		Output('res', res)
+		M = [_id[i] - replicated_res[i] for i in range(d)]
 		replicated_z = replicate(d, z)
-		iz = mat_vec_mult(_id, replicated_z)
-		resz = res * z
-		z_prime = iz - resz
+		z_prime = mat_vec_mult(M, replicated_z)
 		Output('z_prime', z_prime)
+
+		k = 1
+		numerator = [0.0 for _ in range(k)]
+		denominator = [0.0 for _ in range(k)]
+		for i in range(k):
+			s_prime = cp_rep_mat_mult(d, M, _S)
+			encNumerator = (w * z_prime) * s_prime
+			numerator[i] = encNumerator
+			wss = w * (s_prime**2)
+			den = 0.5 * wss
+			denominator[i] = den
+
+		Output('numerator', numerator[0])
+		Output('denominator', denominator[0])
 
 	gwas.set_input_scales(30)
 	gwas.set_output_ranges(30)
@@ -274,8 +293,8 @@ def hom_gwas(X, beta, y, p, xt_x_i, xt, S):
 		inputs[f'xt_{index}'] = row.tolist()[0]
 	for index, row in enumerate(id_matrix):
 		inputs[f'id_{index}'] = row
-	#for index, row in enumerate(S):
-	#	inputs[f's{index}'] = row
+	for index, row in enumerate(S):
+		inputs[f's{index}'] = row
 	for index, row in enumerate(xt_x_i):
 		inputs[f'xtxi_{index}'] = row.tolist()[0]
 	print(inputs)
@@ -287,12 +306,14 @@ def hom_gwas(X, beta, y, p, xt_x_i, xt, S):
 	# Run the program on unencrypted inputs to get reference results
 	reference = evaluate(compiled_gwas, inputs)
 	print("Evaluated output:")
-	print(reference['z_prime'])
+	print(reference['numerator'])
+	print(reference['denominator'])
 	print("\n\n")
 
 	# Print actual outputs
 	print("Actual output:")
-	print(outputs['z_prime'])
+	print(outputs['numerator'])
+	print(outputs['denominator'])
 	#print(outputs['test2'])
 	print("\n\n")
 
@@ -335,5 +356,5 @@ if __name__ == '__main__':
 	print("Newton-Raphson with encryption:")
 	# The the transpose to more easily get to the cols
 	xtxi_t = pinv(np.matmul(matA.T, matA)).T
-	outputs = he_log_reg(matA, beta_weights, y)
+	outputs = he_log_reg(matA, xtxi_t, beta_weights, y)
 	hom_gwas(matA, outputs['beta_weights_final'], y, outputs['SigmoidRes'], xtxi_t, matA.T, matB)
