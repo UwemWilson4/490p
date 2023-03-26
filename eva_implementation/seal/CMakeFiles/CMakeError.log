@@ -1,0 +1,120 @@
+Performing C++ SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /home/uwem/Desktop/490/490p/eva_implementation/seal/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_a30a6/fast && /usr/bin/make -f CMakeFiles/cmTC_a30a6.dir/build.make CMakeFiles/cmTC_a30a6.dir/build
+make[1]: Entering directory '/home/uwem/Desktop/490/490p/eva_implementation/seal/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_a30a6.dir/src.cxx.o
+/usr/bin/c++    -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_a30a6.dir/src.cxx.o -c /home/uwem/Desktop/490/490p/eva_implementation/seal/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_a30a6
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_a30a6.dir/link.txt --verbose=1
+/usr/bin/c++   -DCMAKE_HAVE_LIBC_PTHREAD    CMakeFiles/cmTC_a30a6.dir/src.cxx.o  -o cmTC_a30a6 
+/usr/bin/ld: CMakeFiles/cmTC_a30a6.dir/src.cxx.o: in function `main':
+src.cxx:(.text+0x64): undefined reference to `pthread_create'
+/usr/bin/ld: src.cxx:(.text+0x70): undefined reference to `pthread_detach'
+/usr/bin/ld: src.cxx:(.text+0x80): undefined reference to `pthread_join'
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+make[1]: *** [CMakeFiles/cmTC_a30a6.dir/build.make:87: cmTC_a30a6] Error 1
+make[1]: Leaving directory '/home/uwem/Desktop/490/490p/eva_implementation/seal/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_a30a6/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
+Performing C++ SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /home/uwem/Desktop/490/490p/eva_implementation/seal/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_62d3a/fast && /usr/bin/make -f CMakeFiles/cmTC_62d3a.dir/build.make CMakeFiles/cmTC_62d3a.dir/build
+make[1]: Entering directory '/home/uwem/Desktop/490/490p/eva_implementation/seal/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_62d3a.dir/src.cxx.o
+/usr/bin/c++    -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_62d3a.dir/src.cxx.o -c /home/uwem/Desktop/490/490p/eva_implementation/seal/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_62d3a
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_62d3a.dir/link.txt --verbose=1
+/usr/bin/c++   -DCMAKE_HAVE_LIBC_PTHREAD    CMakeFiles/cmTC_62d3a.dir/src.cxx.o  -o cmTC_62d3a 
+/usr/bin/ld: CMakeFiles/cmTC_62d3a.dir/src.cxx.o: in function `main':
+src.cxx:(.text+0x64): undefined reference to `pthread_create'
+/usr/bin/ld: src.cxx:(.text+0x70): undefined reference to `pthread_detach'
+/usr/bin/ld: src.cxx:(.text+0x80): undefined reference to `pthread_join'
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+make[1]: *** [CMakeFiles/cmTC_62d3a.dir/build.make:87: cmTC_62d3a] Error 1
+make[1]: Leaving directory '/home/uwem/Desktop/490/490p/eva_implementation/seal/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_62d3a/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
+Performing C++ SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /home/uwem/Desktop/490/490p/eva_implementation/seal/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_db83f/fast && /usr/bin/make -f CMakeFiles/cmTC_db83f.dir/build.make CMakeFiles/cmTC_db83f.dir/build
+make[1]: Entering directory '/home/uwem/Desktop/490/490p/eva_implementation/seal/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_db83f.dir/src.cxx.o
+/usr/bin/c++    -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_db83f.dir/src.cxx.o -c /home/uwem/Desktop/490/490p/eva_implementation/seal/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_db83f
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_db83f.dir/link.txt --verbose=1
+/usr/bin/c++   -DCMAKE_HAVE_LIBC_PTHREAD    CMakeFiles/cmTC_db83f.dir/src.cxx.o  -o cmTC_db83f 
+/usr/bin/ld: CMakeFiles/cmTC_db83f.dir/src.cxx.o: in function `main':
+src.cxx:(.text+0x64): undefined reference to `pthread_create'
+/usr/bin/ld: src.cxx:(.text+0x70): undefined reference to `pthread_detach'
+/usr/bin/ld: src.cxx:(.text+0x80): undefined reference to `pthread_join'
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+make[1]: *** [CMakeFiles/cmTC_db83f.dir/build.make:87: cmTC_db83f] Error 1
+make[1]: Leaving directory '/home/uwem/Desktop/490/490p/eva_implementation/seal/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_db83f/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+

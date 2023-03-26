@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/test.dir/log_reg.cpp.o  -o bin/test  /usr/local/lib/libseal-3.6.a -pthread 
