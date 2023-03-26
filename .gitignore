@@ -1,7 +1,7 @@
 #EVA
 #EVA-matrix-multiplication
 #SEAL
-#eva_implementation/seal/bin
-#eva_implementation/seal/CMakeFiles
-#eva_implementation/seal/CMakeCache.txt
-#eva_implementation/seal/cmake_install.cmake
+eva_implementation/seal/bin
+eva_implementation/seal/CMakeFiles
+eva_implementation/seal/CMakeCache.txt
+eva_implementation/seal/cmake_install.cmake
