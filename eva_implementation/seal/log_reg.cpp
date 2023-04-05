@@ -70,6 +70,32 @@ vector<Ciphertext> replicate(Ciphertext ctx, int n, double scale, CKKSEncoder &c
 	return replicate_res;
 }
 
+/* Performs matrix-vector multiplication. */
+Ciphertext mat_vec_mult(vector<Ciphertext> mat, Ciphertext vec, CKKSEncoder &ckks_encoder, Encryptor &encryptor, GaloisKeys galois_keys, RelinKeys relin_keys, Evaluator &evaluator) {
+	vector<Ciphertext> replicated_vec = replicate(vec, mat.size(), pow(2, 40), ckks_encoder, encryptor, galois_keys, relin_keys, evaluator);
+	
+	Ciphertext result;
+	evaluator.multiply(mat[0], replicated_vec[0], result);
+	// Relin
+	evaluator.relinearize_inplace(result, relin_keys);
+	// Rescale
+	evaluator.rescale_to_next_inplace(result);
+	result.scale() = pow(2.0, 40);
+	for (size_t i = 1; i < replicated_vec.size(); i++) {
+		Ciphertext product;
+		evaluator.multiply(mat[i], replicated_vec[i], product);
+		// Relin
+		evaluator.relinearize_inplace(product, relin_keys);
+		// Rescale
+		evaluator.rescale_to_next_inplace(product)
+		product.scale() = pow(2.0, 40);
+
+		evaluator.add_inplace(result, product);
+	}
+
+	return result;
+}
+
 Ciphertext horner_method(Ciphertext ctx, int degree, vector<double> coeffs, CKKSEncoder &ckks_encoder, double scale, Evaluator &evaluator, Encryptor &encryptor, RelinKeys relin_keys, EncryptionParameters params) 
 {
 	SEALContext context(params);
