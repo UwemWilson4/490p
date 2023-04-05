@@ -22,6 +22,15 @@ void print_Ciphertext_Info(string ctx_name, Ciphertext ctx, shared_ptr<SEALConte
     cout << "\\" << endl;
 }
 
+/* Rotates a Ciphertext by k */
+Ciphertext rotate_ciphertext(Ciphertext ctx, int k, GaloisKeys galois_keys, Evaluator &evaluator)
+{
+	Ciphertext rotated;
+	evaluator.rotate(ctx, k, galois_keys, rotated);
+	
+	return rotated;
+}
+
 Ciphertext horner_method(Ciphertext ctx, int degree, vector<double> coeffs, CKKSEncoder &ckks_encoder, double scale, Evaluator &evaluator, Encryptor &encryptor, RelinKeys relin_keys, EncryptionParameters params) 
 {
 	SEALContext context(params);
@@ -136,7 +145,7 @@ int main() {
 
 	// Read in SNP data from a file. Store as 2-dimensional vector of strings. 
 	// Turn into 2-dimensional vector of doubles
-	// 
+	
 
 	// 
 	// Create 
