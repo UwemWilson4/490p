@@ -1,6 +1,8 @@
 #include <iostream>
+#include <vector>
+
 #include "log_reg.h"
-#include "helper.h"
+#include "helpers.h"
 
 
 using namespace std;
@@ -26,9 +28,46 @@ void print_Ciphertext_Info(string ctx_name, Ciphertext ctx, shared_ptr<SEALConte
 Ciphertext rotate_ciphertext(Ciphertext ctx, int k, GaloisKeys galois_keys, Evaluator &evaluator)
 {
 	Ciphertext rotated;
-	evaluator.rotate(ctx, k, galois_keys, rotated);
-	
+	evaluator.rotate_vector(ctx, k, galois_keys, rotated);
+
 	return rotated;
+}
+
+vector<Ciphertext> replicate(Ciphertext ctx, int n, double scale, CKKSEncoder &ckks_encoder, Encryptor &encryptor, GaloisKeys galois_keys, RelinKeys relin_keys, Evaluator &evaluator)
+{
+	vector<Ciphertext> replicate_res(n, 0);
+
+	for (size_t i = 0; i < n; i++) {
+		vector<int> one_vector(n, 0);
+		for (size_t j; j < i; i++) {
+			one_vector[j] = 1;
+		}
+
+		Plaintext pt_one_vector;
+		Ciphertext ct_one_vector;
+		// Encode the values in one_vector into a plaintext
+		ckks_encoder.encode(one_vector, scale, pt_one_vector);
+
+		// Converts every slot in the ciphertext to 0 except for the ith index
+		Ciphertext temp_ciphertext;
+		evaluator.multiply_plain(ctx, pt_one_vector, temp_ciphertext);
+		// Relinearization
+		evaluator.relinearize_inplace(temp_ciphertext, relin_keys);
+		// Rescale
+		evaluator.rescale_to_next_inplace(temp_ciphertext);
+		// Manual rescale
+		temp_ciphertext.scale() = pow(2.0, 40);
+
+		for (size_t j = 0; i < (int)log2(n)) {
+			// NOTE: may have to do a modulus switch here
+			Ciphertext temp_rotated = rotate_ciphertext(temp_ciphertext, pow(2, j), galois_keys, evaluator);
+			evaluator.add_inplace(temp_ciphertext, temp_rotated);
+		}
+
+		replicate_res[i] = temp_ciphertext;
+	}
+
+	return replicate_res;
 }
 
 Ciphertext horner_method(Ciphertext ctx, int degree, vector<double> coeffs, CKKSEncoder &ckks_encoder, double scale, Evaluator &evaluator, Encryptor &encryptor, RelinKeys relin_keys, EncryptionParameters params) 
@@ -121,7 +160,7 @@ int main() {
     double scale = pow(2.0, 40);
 
 	// Creat context and generate keys
-	SEALContext context(params);
+	SEALContext context(parms);
     auto tmp = make_shared<SEALContext>(context);
 
     // Generate keys, encryptor, decryptor and evaluator

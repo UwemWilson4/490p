@@ -1,6 +1,7 @@
 #include "seal/seal.h"
 
 #include <iostream>
+#include <iomanip>
 
 /* Helper functions taken from the examples.h file of native/examples in SEAL */
 
