@@ -346,6 +346,9 @@ if __name__ == '__main__':
 	matA = [[random.randint(0, 3) for _ in range(d)] for _ in range(d)]
 	matA = np.matrix(matA)
 	matB = [[random.randint(0, 3) for _ in range(d)] for _ in range(d)]
+	for i in range(len(matA)):
+		print(matA[i])
+		
 	print("Newton-Raphson with no encryption:")
 	#test_no_enc()
 	print("\n\n")

@@ -96,6 +96,20 @@ Ciphertext mat_vec_mult(vector<Ciphertext> mat, Ciphertext vec, CKKSEncoder &ckk
 	return result;
 }
 
+/* Performs matrix multiplication between two column-packed matrices. */
+vector<Ciphertext> cp_mat_mult(vector<Ciphertext> matA, vector<Ciphertext> matB, int n, double scale, CKKSEncoder &ckks_encoder, Encryptor &encryptor, GaloisKeys galois_keys, RelinKeys relin_keys, Evaluator &evaluator)
+{
+	int n = matB.size();
+	vector<Ciphertext> result(n);
+
+	for (size_t i = 0; i < n; i++) {
+		vector<Ciphertext> replicated_b = replicate(matB[i], n, pow(2.0, 40), ckks_encoder, encryptor, galois_keys, relin_keys, evaluator);
+		result[i] = mat_vec_mult(matA, replicted_b, ckks_encoder, encryptor, galois_keys, relin_keys, evaluator);
+	}
+
+	return result;
+}
+
 Ciphertext horner_method(Ciphertext ctx, int degree, vector<double> coeffs, CKKSEncoder &ckks_encoder, double scale, Evaluator &evaluator, Encryptor &encryptor, RelinKeys relin_keys, EncryptionParameters params) 
 {
 	SEALContext context(params);
@@ -205,8 +219,6 @@ int main() {
 
     // Create CKKS encoder
     CKKSEncoder ckks_encoder(context);
-
-    // TODO: Create function to print parameters
 
 	// Read in SNP data from a file. Store as 2-dimensional vector of strings. 
 	// Turn into 2-dimensional vector of doubles
