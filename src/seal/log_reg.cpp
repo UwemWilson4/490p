@@ -1,11 +1,16 @@
 #include <iostream>
 #include <vector>
+#include <armadillo>
+#include <stdlib.h>
 
 #include "log_reg.h"
 #include "helpers.h"
 
+#define ITERS 10
+
 
 using namespace std;
+using namespace arma;
 using namespace seal;
 
 /* Prints information about Ciphertext's parameters */
@@ -35,10 +40,10 @@ Ciphertext rotate_ciphertext(Ciphertext ctx, int k, GaloisKeys galois_keys, Eval
 
 vector<Ciphertext> replicate(Ciphertext ctx, int n, double scale, CKKSEncoder &ckks_encoder, Encryptor &encryptor, GaloisKeys galois_keys, RelinKeys relin_keys, Evaluator &evaluator)
 {
-	vector<Ciphertext> replicate_res(n, 0);
+	vector<Ciphertext> replicate_res(n);
 
 	for (size_t i = 0; i < n; i++) {
-		vector<int> one_vector(n, 0);
+		vector<double> one_vector(n, 0.0);
 		for (size_t j; j < i; i++) {
 			one_vector[j] = 1;
 		}
@@ -58,7 +63,7 @@ vector<Ciphertext> replicate(Ciphertext ctx, int n, double scale, CKKSEncoder &c
 		// Manual rescale
 		temp_ciphertext.scale() = pow(2.0, 40);
 
-		for (size_t j = 0; i < (int)log2(n)) {
+		for (size_t j = 0; i < (int)log2(n); i++) {
 			// NOTE: may have to do a modulus switch here
 			Ciphertext temp_rotated = rotate_ciphertext(temp_ciphertext, pow(2, j), galois_keys, evaluator);
 			evaluator.add_inplace(temp_ciphertext, temp_rotated);
@@ -87,7 +92,7 @@ Ciphertext mat_vec_mult(vector<Ciphertext> mat, Ciphertext vec, CKKSEncoder &ckk
 		// Relin
 		evaluator.relinearize_inplace(product, relin_keys);
 		// Rescale
-		evaluator.rescale_to_next_inplace(product)
+		evaluator.rescale_to_next_inplace(product);
 		product.scale() = pow(2.0, 40);
 
 		evaluator.add_inplace(result, product);
@@ -99,17 +104,16 @@ Ciphertext mat_vec_mult(vector<Ciphertext> mat, Ciphertext vec, CKKSEncoder &ckk
 /* Performs matrix multiplication between two column-packed matrices. */
 vector<Ciphertext> cp_mat_mult(vector<Ciphertext> matA, vector<Ciphertext> matB, int n, double scale, CKKSEncoder &ckks_encoder, Encryptor &encryptor, GaloisKeys galois_keys, RelinKeys relin_keys, Evaluator &evaluator)
 {
-	int n = matB.size();
 	vector<Ciphertext> result(n);
 
 	for (size_t i = 0; i < n; i++) {
-		vector<Ciphertext> replicated_b = replicate(matB[i], n, pow(2.0, 40), ckks_encoder, encryptor, galois_keys, relin_keys, evaluator);
-		result[i] = mat_vec_mult(matA, replicted_b, ckks_encoder, encryptor, galois_keys, relin_keys, evaluator);
+		result[i] = mat_vec_mult(matA, matB[i], ckks_encoder, encryptor, galois_keys, relin_keys, evaluator);
 	}
 
 	return result;
 }
 
+// Reference: https://github.com/MarwanNour/SEAL-FYP-Logistic-Regression/blob/master/logistic_regression_ckks.cpp
 Ciphertext horner_method(Ciphertext ctx, int degree, vector<double> coeffs, CKKSEncoder &ckks_encoder, double scale, Evaluator &evaluator, Encryptor &encryptor, RelinKeys relin_keys, EncryptionParameters params) 
 {
 	SEALContext context(params);
@@ -122,11 +126,7 @@ Ciphertext horner_method(Ciphertext ctx, int degree, vector<double> coeffs, CKKS
 
     vector<Plaintext> plain_coeffs(degree + 1);
 
-    // Encode coefficients into plaintexts
-    /**
-     * NOTE: This code may assume that the polynomial goes smallest degree
-     * to largest to degree from left to right. 
-     * */
+    // Random Coefficients from 0-1
     cout << "Polynomial = ";
     int counter = 0;
     for (size_t i = 0; i < degree + 1; i++)
@@ -135,19 +135,27 @@ Ciphertext horner_method(Ciphertext ctx, int degree, vector<double> coeffs, CKKS
         ckks_encoder.encode(coeffs[i], scale, plain_coeffs[i]);
         cout << "x^" << counter << " * (" << coeffs[i] << ")"
              << ", ";
-        counter++;
+        counter += 2;
     }
     cout << endl;
     // cout << "->" << __LINE__ << endl;
 
+    double one_eigth = 1 / 8;
+    Plaintext pt_eighth;
+    ckks_encoder.encode(one_eighth, scale, pt_eigth);
+
+    evaluator.multiply_plain_inplace(ctx, pt_eighth);
+    evaluator.relinearize_inplace(ctx, relin_keys);
+    ctx.scale() = scale;
+
     Ciphertext temp;
-    encryptor.encrypt(plain_coeffs[0], temp);
+    encryptor.encrypt(plain_coeffs[degree], temp);
 
     Plaintext plain_result;
     vector<double> result;
     // cout << "->" << __LINE__ << endl;
 
-    for (int i = 1; i < degree + 1; i++)
+    for (int i = degree - 1; i >= 0; i--)
     {
         int ctx_level = tmp->get_context_data(ctx.parms_id())->chain_index();
         int temp_level = tmp->get_context_data(temp.parms_id())->chain_index();
@@ -169,7 +177,7 @@ Ciphertext horner_method(Ciphertext ctx, int degree, vector<double> coeffs, CKKS
 
         evaluator.mod_switch_to_inplace(plain_coeffs[i], temp.parms_id());
 
-        // Manual rescale to match plain_coeffs[i] scale
+        // Manual rescale
         temp.scale() = pow(2.0, 40);
         // cout << "->" << __LINE__ << endl;
 
@@ -180,6 +188,14 @@ Ciphertext horner_method(Ciphertext ctx, int degree, vector<double> coeffs, CKKS
     print_Ciphertext_Info("temp", temp, tmp);
 
     return temp;
+}
+
+vector<Ciphertext> train_model(vector<Ciphertext> X, Ciphertext weights, vector<Ciphertext> xtxi, CKKSEncoder &ckks_encoder, Encryptor &encryptor, GaloisKeys galois_keys, RelinKeys relin_keys, EncryptionParameters params)
+{
+	vector<double> coeffs = {0.5, 1.73496, -4.19407, 5.43402, -2.50739};
+	for (size_t k = 0; k < ITERS; k++) {
+		Ciphertext mat_vec_prod = mat_vec_mult(X, weigths, ckks_encoder, enryptor, galois_keys, relin_keys, evaluator);
+	}
 }
 
 int main() {
@@ -220,12 +236,94 @@ int main() {
     // Create CKKS encoder
     CKKSEncoder ckks_encoder(context);
 
+    //--------- Prep Data ---------//
+    cout << "Prepping data..." << endl;
 	// Read in SNP data from a file. Store as 2-dimensional vector of strings. 
-	// Turn into 2-dimensional vector of doubles
-	
+	string file_name = "test_data.csv";
+	vector<vector<string>> s_data = csv_to_matrix(file_name);
+	cout << "CSV successfully read in" << endl;
 
-	// 
-	// Create 
+	// Turn into 2-dimensional vector of doubles
+	cout << "Converting string matrix to double matrix..." << endl;
+	vector<vector<double>> d_data = string_to_double(s_data);
+	int rows = d_data.size();
+	int cols = d_data[0].size();
+	mat A(rows, cols);
+	for (size_t i = 0; i < rows; i++) {
+		for (size_t j = j; j < cols; j++) {
+			A(i, j) = d_data[i][j];
+		}
+	}
+	cout << "Successfully converted string matrix to double matrix" << endl;
+	cout << "Transposing double matrix..." << endl;
+	// Transpose the data because it needs to be encrypt as a CP matrix
+	vector<vector<double>> d_data_tranpsose = transpose_matrix(d_data);
+	cout << "Transposed double matrix with transpose_matrix()" << endl;
+	cout << "Transposing double matrix using armadillo..." << endl;
+	mat A_t = A.t();
+	cout << "Transposed double matrix with armadillo" << endl;
+	cout << "Finding A_t * A using armadillo..." << endl;
+
+	// vector<vector<double>> d_data_transpose_inv = pinv(d_data_tranpsose, 0.1);
+
+	mat xtx = A_t * A;
+	cout << "Found A_t * A with armadillo" << endl;
+	cout << "Finding A_t_A inverse using armadillo..." << endl;
+	mat xtxi = pinv(xtx);
+	cout << "Found A_t * A with armadillo" << endl;
+	cout << "Finding A_t_A inverse using armadillo..." << endl;
+
+	typedef vector<vector<double>> stdvecvec;
+
+	// stdvecvec xtxi_t = conv_to<stdvecvec>::from(xtxi.t()); 
+	cout << "Found inverse with armadillo" << endl;
+	cout << "Generating weights and outcomes vectors..." << endl;
+
+	// Weights 
+	vector<double> weights(cols, 0);
+
+	// Generate outcomes vector
+	vector<double> outcomes(rows);
+	for (size_t i = 0; i < rows; i++) {
+		outcomes[i] = (double)(rand() % 2);
+	} 
+
+	//--------- Encode Data ---------//
+	cout << "Found weights and outcomes vectors" << endl;
+	cout << "Encoding data..." << endl;
 	// Encode the data using scale
+	vector<Plaintext> pt_data(rows);
+	for (size_t i = 0; i < rows; i++) {
+		ckks_encoder.encode(d_data[i], scale, pt_data[i]);
+	}
+
+	Plaintext pt_weights; 
+	ckks_encoder.encode(weights, scale, pt_weights);
+
+	Plaintext pt_outcomes;
+	ckks_encoder.encode(outcomes, scale, pt_outcomes);
+	cout << "Finished encoding data" << endl;
+
+	//--------- Encrypt Data ---------//
+	cout << "Encrypting data..." << endl;
+	// Encrypt the data
+	vector<Ciphertext> ct_data(rows);
+	for (size_t i = 0; i < rows; i++) {
+		encryptor.encrypt(pt_data[i], ct_data[i]);
+	}
+
+	Ciphertext ct_weights;
+	encryptor.encrypt(pt_weights, ct_weights);
+
+	Ciphertext ct_outcomes;
+	encryptor.encrypt(pt_outcomes, ct_outcomes);
+	cout << "Finished encrypting data" << endl;
+
+	// Check scales
+	cout << "Checking scales..." << endl;
+	cout << "|________ Starting Scales ________|" << endl;
+	cout << "data: " << ct_data[0].scale() << endl;
+	cout << "weights: " << ct_weights.scale() << endl;
+	cout << "outcomes: " << ct_outcomes.scale() << endl;
 
 }

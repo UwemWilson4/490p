@@ -38,3 +38,161 @@ int main(void)
   return 0;
 }
 
+Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /home/uwem/Desktop/490/490p/src/seal/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_ea24a/fast && /usr/bin/make -f CMakeFiles/cmTC_ea24a.dir/build.make CMakeFiles/cmTC_ea24a.dir/build
+make[1]: Entering directory '/home/uwem/Desktop/490/490p/src/seal/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_ea24a.dir/src.c.o
+/usr/bin/cc   -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_ea24a.dir/src.c.o   -c /home/uwem/Desktop/490/490p/src/seal/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_ea24a
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_ea24a.dir/link.txt --verbose=1
+/usr/bin/cc  -DCMAKE_HAVE_LIBC_PTHREAD    CMakeFiles/cmTC_ea24a.dir/src.c.o  -o cmTC_ea24a 
+/usr/bin/ld: CMakeFiles/cmTC_ea24a.dir/src.c.o: in function `main':
+src.c:(.text+0x64): undefined reference to `pthread_create'
+/usr/bin/ld: src.c:(.text+0x70): undefined reference to `pthread_detach'
+/usr/bin/ld: src.c:(.text+0x80): undefined reference to `pthread_join'
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+make[1]: *** [CMakeFiles/cmTC_ea24a.dir/build.make:87: cmTC_ea24a] Error 1
+make[1]: Leaving directory '/home/uwem/Desktop/490/490p/src/seal/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_ea24a/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
+Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /home/uwem/Desktop/490/490p/src/seal/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_94d58/fast && /usr/bin/make -f CMakeFiles/cmTC_94d58.dir/build.make CMakeFiles/cmTC_94d58.dir/build
+make[1]: Entering directory '/home/uwem/Desktop/490/490p/src/seal/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_94d58.dir/src.c.o
+/usr/bin/cc   -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_94d58.dir/src.c.o   -c /home/uwem/Desktop/490/490p/src/seal/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_94d58
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_94d58.dir/link.txt --verbose=1
+/usr/bin/cc  -DCMAKE_HAVE_LIBC_PTHREAD    CMakeFiles/cmTC_94d58.dir/src.c.o  -o cmTC_94d58 
+/usr/bin/ld: CMakeFiles/cmTC_94d58.dir/src.c.o: in function `main':
+src.c:(.text+0x64): undefined reference to `pthread_create'
+/usr/bin/ld: src.c:(.text+0x70): undefined reference to `pthread_detach'
+/usr/bin/ld: src.c:(.text+0x80): undefined reference to `pthread_join'
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+make[1]: *** [CMakeFiles/cmTC_94d58.dir/build.make:87: cmTC_94d58] Error 1
+make[1]: Leaving directory '/home/uwem/Desktop/490/490p/src/seal/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_94d58/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
+Determining if the function sgemm_ exists failed with the following output:
+Change Dir: /home/uwem/Desktop/490/490p/src/seal/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_ab8dc/fast && /usr/bin/make -f CMakeFiles/cmTC_ab8dc.dir/build.make CMakeFiles/cmTC_ab8dc.dir/build
+make[1]: Entering directory '/home/uwem/Desktop/490/490p/src/seal/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_ab8dc.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=sgemm_   -o CMakeFiles/cmTC_ab8dc.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.16/Modules/CheckFunctionExists.c
+Linking C executable cmTC_ab8dc
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_ab8dc.dir/link.txt --verbose=1
+/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=sgemm_    CMakeFiles/cmTC_ab8dc.dir/CheckFunctionExists.c.o  -o cmTC_ab8dc 
+/usr/bin/ld: CMakeFiles/cmTC_ab8dc.dir/CheckFunctionExists.c.o: in function `main':
+CheckFunctionExists.c:(.text+0x18): undefined reference to `sgemm_'
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+make[1]: *** [CMakeFiles/cmTC_ab8dc.dir/build.make:87: cmTC_ab8dc] Error 1
+make[1]: Leaving directory '/home/uwem/Desktop/490/490p/src/seal/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_ab8dc/fast] Error 2
+
+
+
+Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /home/uwem/Desktop/490/490p/src/seal/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_80ba9/fast && /usr/bin/make -f CMakeFiles/cmTC_80ba9.dir/build.make CMakeFiles/cmTC_80ba9.dir/build
+make[1]: Entering directory '/home/uwem/Desktop/490/490p/src/seal/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_80ba9.dir/src.c.o
+/usr/bin/cc   -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_80ba9.dir/src.c.o   -c /home/uwem/Desktop/490/490p/src/seal/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_80ba9
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_80ba9.dir/link.txt --verbose=1
+/usr/bin/cc  -DCMAKE_HAVE_LIBC_PTHREAD    CMakeFiles/cmTC_80ba9.dir/src.c.o  -o cmTC_80ba9 
+/usr/bin/ld: CMakeFiles/cmTC_80ba9.dir/src.c.o: in function `main':
+src.c:(.text+0x64): undefined reference to `pthread_create'
+/usr/bin/ld: src.c:(.text+0x70): undefined reference to `pthread_detach'
+/usr/bin/ld: src.c:(.text+0x80): undefined reference to `pthread_join'
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+make[1]: *** [CMakeFiles/cmTC_80ba9.dir/build.make:87: cmTC_80ba9] Error 1
+make[1]: Leaving directory '/home/uwem/Desktop/490/490p/src/seal/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_80ba9/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
+Determining if the function sgemm_ exists failed with the following output:
+Change Dir: /home/uwem/Desktop/490/490p/src/seal/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_f4597/fast && /usr/bin/make -f CMakeFiles/cmTC_f4597.dir/build.make CMakeFiles/cmTC_f4597.dir/build
+make[1]: Entering directory '/home/uwem/Desktop/490/490p/src/seal/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_f4597.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=sgemm_   -o CMakeFiles/cmTC_f4597.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.16/Modules/CheckFunctionExists.c
+Linking C executable cmTC_f4597
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_f4597.dir/link.txt --verbose=1
+/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=sgemm_    CMakeFiles/cmTC_f4597.dir/CheckFunctionExists.c.o  -o cmTC_f4597 
+/usr/bin/ld: CMakeFiles/cmTC_f4597.dir/CheckFunctionExists.c.o: in function `main':
+CheckFunctionExists.c:(.text+0x18): undefined reference to `sgemm_'
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+make[1]: *** [CMakeFiles/cmTC_f4597.dir/build.make:87: cmTC_f4597] Error 1
+make[1]: Leaving directory '/home/uwem/Desktop/490/490p/src/seal/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_f4597/fast] Error 2
+
+
+

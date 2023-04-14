@@ -1,4 +1,4 @@
-# Install script for directory: /home/uwem/Desktop/490/490p/eva_implementation/seal
+# Install script for directory: /home/uwem/Desktop/490/490p/src/seal
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -45,5 +45,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/uwem/Desktop/490/490p/eva_implementation/seal/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/uwem/Desktop/490/490p/src/seal/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

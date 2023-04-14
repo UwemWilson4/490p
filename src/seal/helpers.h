@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <string>
 
 /* Helper functions taken from the examples.h file of native/examples in SEAL */
 
@@ -87,7 +88,7 @@ vector<vector<string>> csv_to_matrix(string file_name)
 		{
 			stringstream cur_line(line);
 			vector<string> parsed_row;
-			while (getline(cur_line, value, ","))
+			while (getline(cur_line, value, ','))
 			{
 				parsed_row.push_back(value);
 			}
@@ -113,4 +114,32 @@ vector<vector<double>> string_to_double(vector<vector<string>> s_matrix)
 	}
 
 	return result;
+}
+
+/* Returns a transposed matrix */
+vector<vector<double>> transpose_matrix(vector<vector<double>> input_matrix) {
+    int n = input_matrix.size();
+    cout << "Rows: " << n << endl;
+    int m = input_matrix[0].size();
+    cout << "Cols: " << m << endl;
+
+    vector<vector<double>> result(n, vector<double> (m));
+
+    for (size_t i = 0; i < n; i++) {
+        for (size_t j = 0; j < m; j++) {
+            result[j][i] = input_matrix[i][j];
+        }
+    }
+
+    return result;
+}
+
+void print_pt_scale(Plaintext pt) {
+    cout << fixed << setprecision(10);
+    cout << "Exact scale of plaintext: " << pt.scale() << endl;
+}
+
+void print_ct_scale(Plaintext ct) {
+    cout << fixed << setprecision(10);
+    cout << "Exact scale of ciphertext: " << ct.scale() << endl;
 }
