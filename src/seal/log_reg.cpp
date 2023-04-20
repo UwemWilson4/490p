@@ -6,7 +6,7 @@
 #include "log_reg.h"
 #include "helpers.h"
 
-#define ITERS 10
+#define ITERS 5
 
 
 using namespace std;
@@ -31,15 +31,24 @@ void print_Ciphertext_Info(string ctx_name, Ciphertext ctx, shared_ptr<SEALConte
 
 /* Ensures levels are equalized between two ciphertexts */
 void equalize_levels(Ciphertext &a, Ciphertext &b, Evaluator &evaluator, EncryptionParameters params) {
+	cout << "Creating shared context..." << endl;
 	SEALContext context(params);
 	auto tmp = make_shared<SEALContext>(context);
 
+	cout << "Getting chain index a..." << endl;
 	int level_a = tmp->get_context_data(a.parms_id())->chain_index();
+	cout << "Getting chain index b..." << endl;
 	int level_b = tmp->get_context_data(b.parms_id())->chain_index();
 
 	if (level_a > level_b) {
+		if (level_a == 0) {
+			cout << "Can't mod switch any further" << endl;
+		}
 		evaluator.mod_switch_to_inplace(a, b.parms_id());
 	} else if (level_a < level_b) {
+		if (level_b == 0) {
+			cout << "Can't mod switch any further" << endl;
+		}
 		evaluator.mod_switch_to_inplace(b, a.parms_id());
 	}
 }
@@ -73,10 +82,12 @@ vector<Ciphertext> replicate(Ciphertext ctx, int n, double scale, CKKSEncoder &c
 		Ciphertext ct_one_vector;
 		// Encode the values in one_vector into a plaintext
 		ckks_encoder.encode(one_vector, scale, pt_one_vector);
+		encryptor.encrypt(pt_one_vector, ct_one_vector);
 
 		// Converts every slot in the ciphertext to 0 except for the ith index
 		Ciphertext temp_ciphertext;
-		evaluator.multiply_plain(ctx, pt_one_vector, temp_ciphertext);
+		equalize_levels(ctx, ct_one_vector, evaluator, params);
+		evaluator.multiply(ctx, ct_one_vector, temp_ciphertext);
 		print_Ciphertext_Info("temp_ciphertext", temp_ciphertext, tmp);
 		// Relinearization
 		evaluator.relinearize_inplace(temp_ciphertext, relin_keys);
@@ -229,7 +240,7 @@ Ciphertext horner_method(Ciphertext ctx, int degree, vector<double> coeffs, CKKS
     if (degree == 7) {
     	num_coeffs = 5;
     }
-    vector<Plaintext> plain_coeffs(degree + 1);
+    vector<Plaintext> plain_coeffs(num_coeffs);
 
     // Random Coefficients from 0-1
     cout << "Polynomial = ";
@@ -237,12 +248,14 @@ Ciphertext horner_method(Ciphertext ctx, int degree, vector<double> coeffs, CKKS
     int index = 0;
     while (index < num_coeffs) {
     	// coeffs[i] = (double)rand() / RAND_MAX;
+    	cout << coeffs[index] << endl;
         ckks_encoder.encode(coeffs[index], scale, plain_coeffs[index]);
         cout << "x^" << counter << " * (" << coeffs[index] << ")"
              << ", ";
         counter += counter == 0 ? 1 : 2;
         index++;
     }
+    cout << "Done printing coefficients" << endl;
 
     /*
     for (size_t i = 0; i < degree + 1; i++)
@@ -258,27 +271,36 @@ Ciphertext horner_method(Ciphertext ctx, int degree, vector<double> coeffs, CKKS
     cout << endl;
     // cout << "->" << __LINE__ << endl;
 
+    cout << "Calculating 1 / 8..." << endl;
     double one_eighth = 1 / 8;
     Plaintext pt_eighth;
     ckks_encoder.encode(one_eighth, scale, pt_eighth);
 
+    cout << "Encrypting 1 / 8..." << endl;
     Ciphertext ct_eighth;
     encryptor.encrypt(pt_eighth, ct_eighth);
-
+    cout << "Equalizing ciphertexts..." << endl;
     equalize_levels(ctx, ct_eighth, evaluator, params);
+    cout << "Multiplying ciphertexts..." << endl;
     evaluator.multiply_inplace(ctx, ct_eighth);
+    cout << "Relinearizing ciphertexts..." << endl;
     evaluator.relinearize_inplace(ctx, relin_keys);
+    cout << "Rescaling ctx..." << endl;
     ctx.scale() = scale;
 
+    cout << "Encrypting plain_coeffs[num_coeffs]..." << num_coeffs << endl;
     Ciphertext temp;
-    encryptor.encrypt(plain_coeffs[degree], temp);
+    encryptor.encrypt(plain_coeffs[num_coeffs - 1], temp);
+    print_Ciphertext_Info("tmep", temp, tmp);
 
     Plaintext plain_result;
     vector<double> result;
     // cout << "->" << __LINE__ << endl;
 
-    for (int i = degree - 1; i >= 0; i--)
+    cout << "Running horner loop..." << endl;
+    for (int i = num_coeffs - 1; i >= 0; i--)
     {
+    	cout << "ITERATION " << i << endl;
         int ctx_level = tmp->get_context_data(ctx.parms_id())->chain_index();
         int temp_level = tmp->get_context_data(temp.parms_id())->chain_index();
         if (ctx_level > temp_level)
@@ -312,21 +334,92 @@ Ciphertext horner_method(Ciphertext ctx, int degree, vector<double> coeffs, CKKS
     return temp;
 }
 
-Ciphertext train_model(vector<Ciphertext> X, Ciphertext weights, Ciphertext y, vector<Ciphertext> xtxi, CKKSEncoder &ckks_encoder, Encryptor &encryptor, Evaluator &evaluator, GaloisKeys galois_keys, RelinKeys relin_keys, EncryptionParameters params)
+vector<Ciphertext> hessian_approx(vector<Ciphertext> ctx, double scale, CKKSEncoder &ckks_encoder, Encryptor &encryptor, Evaluator &evaluator, RelinKeys relin_keys, EncryptionParameters params) 
 {
+	SEALContext context(params);
+    auto tmp = make_shared<SEALContext>(context);
+
+	vector<Ciphertext> result;
+	int num_rows = ctx.size();
+	for (size_t i = 0; i < num_rows; i++) {
+		double coeff = 4;
+		Plaintext pt_coeff;
+		ckks_encoder.encode(coeff, scale, pt_coeff);
+
+		Ciphertext ct_coeff;
+		encryptor.encrypt(pt_coeff, ct_coeff);
+		print_Ciphertext_Info("ct_coeff", ct_coeff, tmp);
+		print_Ciphertext_Info("ctx[i]", ctx[i], tmp);
+
+		equalize_levels(ctx[i], ct_coeff, evaluator, params);
+
+		evaluator.multiply(ctx[i], ct_coeff, result[i]);
+
+		evaluator.relinearize_inplace(result[i], relin_keys);
+
+		result[i].scale() = pow(2.0, (int)log2(result[i].scale()));
+	}
+
+	return result;
+}
+
+Ciphertext train_model(vector<Ciphertext> X, Ciphertext weights, Ciphertext y, vector<Ciphertext> xtxi, vector<Ciphertext> xt, CKKSEncoder &ckks_encoder, Encryptor &encryptor, Evaluator &evaluator, GaloisKeys galois_keys, RelinKeys relin_keys, EncryptionParameters params)
+{
+	SEALContext context(params);
+    auto tmp = make_shared<SEALContext>(context);
+
+    cout << "->" << __func__ << endl;
+    cout << "->" << __LINE__ << endl;
+
+    double scale = pow(2.0, 40);
 	vector<double> coeffs = {0.5, 1.73496, -4.19407, 5.43402, -2.50739};
+	Ciphertext curr_weights = weights;
 	for (size_t k = 0; k < ITERS; k++) {
-		Ciphertext mat_vec_prod = mat_vec_mult(X, weights, ckks_encoder, encryptor, galois_keys, relin_keys, evaluator, params);
+		/*
+		Ciphertext mat_vec_prod = mat_vec_mult(X, curr_weights, ckks_encoder, encryptor, galois_keys, relin_keys, evaluator, params);
 		cout << "MatVecProd scale: " << mat_vec_prod.scale() << endl;
-		Ciphertext p = horner_method(mat_vec_prod, 7, coeffs, ckks_encoder, pow(2.0, 40), evaluator, encryptor, relin_keys, params);
-		cout << "Signmoid result scale: " << p.scale() << endl;
+		
+		Ciphertext p = horner_method(mat_vec_prod, 7, coeffs, ckks_encoder, scale, evaluator, encryptor, relin_keys, params);
+		print_Ciphertext_Info("p", p, tmp);
+		print_Ciphertext_Info("y", y, tmp);
+		
 		Ciphertext y_minus_p;
+		cout << "Equalizing y_minus_p and p..." << endl;
+		equalize_levels(y, p, evaluator, params);
+		cout << "Evaluating y - p" << endl;
 		evaluator.sub(y, p, y_minus_p);
+
+		Ciphertext g = mat_vec_mult(xt, y_minus_p, ckks_encoder, encryptor, galois_keys, relin_keys, evaluator, params);
+		*/
+		vector<Ciphertext> H = hessian_approx(xtxi, scale, ckks_encoder, encryptor, evaluator, relin_keys, params);
+		print_Ciphertext_Info("H", H[0], tmp);
+		// print_Ciphertext_Info("g", g, tmp);
+		print_Ciphertext_Info("curr_weights", curr_weights, tmp);
+
+		int one = 1;
+		Plaintext pt_one1;
+		Plaintext pt_one2;
+		ckks_encoder.encode(one, pow(2.0, 40), pt_one1);
+		ckks_encoder.encode(one, pow(2.0, 40), pt_one2);
+
+		Ciphertext ct_one1;
+		Ciphertext ct_one2;
+		encryptor.encrypt(pt_one1, ct_one1);
+		encryptor.encrypt(pt_one2, ct_one2);
+
+		print_Ciphertext_Info("ct_one1", ct_one1, tmp);
+		print_Ciphertext_Info("ct_one2", ct_one2, tmp);
+
+		Ciphertext result;
+		evaluator.multiply(ct_one1, ct_one2, result);
+		print_Ciphertext_Info("ct_one1", ct_one1, tmp);
+		print_Ciphertext_Info("ct_one2", ct_one2, tmp);
+
+		break;
 	}
 }
 
 int main() {
-	cout << "Test\n" << endl;
 	/*
 	We start by setting up the CKKS scheme.
 	*/
@@ -334,10 +427,10 @@ int main() {
 
 	// Set coefficient modulus and polynomial modulus degree
 	// Bit count for coeff_modulus must be below bound for poly_modulus_degree
-	size_t poly_modulus_degree = 16384;
-	cout << "Bound for poly_modulus_degree of size" << poly_modulus_degree << ": " << CoeffModulus::MaxBitCount(poly_modulus_degree) << endl;
+	size_t poly_modulus_degree = 32768;
+	cout << "Bound for poly_modulus_degree of size " << poly_modulus_degree << ": " << CoeffModulus::MaxBitCount(poly_modulus_degree) << endl;
     parms.set_poly_modulus_degree(poly_modulus_degree);
-    parms.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree, {60, 40, 40, 40, 40, 40, 40, 40, 60}));
+    parms.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree, {60, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 60}));
 
 	// Set scale
     double scale = pow(2.0, 40);
@@ -405,8 +498,10 @@ int main() {
 
 	// stdvecvec xtxi_t = conv_to<stdvecvec>::from(xtxi.t());
 	stdvecvec xtxi_(rows);
+	stdvecvec xt(rows);
 	for (size_t i = 0; i < rows; i++) {
 		xtxi_[i] = conv_to<stdvec>::from(xtxi.row(i));  
+		xt[i] = conv_to<stdvec>::from(A_t.row(i));
 	}
 	cout << "Found inverse with armadillo" << endl;
 	cout << "Generating weights and outcomes vectors..." << endl;
@@ -426,9 +521,11 @@ int main() {
 	// Encode the data using scale
 	vector<Plaintext> pt_data(rows);
 	vector<Plaintext> pt_xtxi(rows);
+	vector<Plaintext> pt_xt(rows);
 	for (size_t i = 0; i < rows; i++) {
 		ckks_encoder.encode(d_data[i], scale, pt_data[i]);
 		ckks_encoder.encode(xtxi_[i], scale, pt_xtxi[i]);
+		ckks_encoder.encode(xt[i], scale, pt_xt[i]);
 	}
 
 	Plaintext pt_weights; 
@@ -443,9 +540,11 @@ int main() {
 	// Encrypt the data
 	vector<Ciphertext> ct_data(rows);
 	vector<Ciphertext> ct_xtxi(rows);
+	vector<Ciphertext> ct_xt(rows);
 	for (size_t i = 0; i < rows; i++) {
 		encryptor.encrypt(pt_data[i], ct_data[i]);
 		encryptor.encrypt(pt_xtxi[i], ct_xtxi[i]);
+		encryptor.encrypt(pt_xt[i], ct_xt[i]);
 	}
 
 	Ciphertext ct_weights;
@@ -463,6 +562,6 @@ int main() {
 	cout << "outcomes: " << ct_outcomes.scale() << endl;
 
 	cout << "Beginning model training..." << endl;
-	Ciphertext new_weights = train_model(ct_data, ct_weights, ct_outcomes, ct_xtxi, ckks_encoder, encryptor, evaluator, gal_keys, relin_keys, parms);
+	Ciphertext new_weights = train_model(ct_data, ct_weights, ct_outcomes, ct_xtxi, ct_xt, ckks_encoder, encryptor, evaluator, gal_keys, relin_keys, parms);
 
 }
