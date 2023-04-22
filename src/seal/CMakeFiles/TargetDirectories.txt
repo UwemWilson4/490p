@@ -1,3 +1,4 @@
 /home/uwem/Desktop/490/490p/src/seal/CMakeFiles/rebuild_cache.dir
+/home/uwem/Desktop/490/490p/src/seal/CMakeFiles/seal_tests.dir
 /home/uwem/Desktop/490/490p/src/seal/CMakeFiles/edit_cache.dir
 /home/uwem/Desktop/490/490p/src/seal/CMakeFiles/test.dir

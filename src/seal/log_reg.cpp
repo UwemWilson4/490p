@@ -6,7 +6,7 @@
 #include "log_reg.h"
 #include "helpers.h"
 
-#define ITERS 5
+#define ITERS 2
 
 
 using namespace std;
@@ -31,13 +31,12 @@ void print_Ciphertext_Info(string ctx_name, Ciphertext ctx, shared_ptr<SEALConte
 
 /* Ensures levels are equalized between two ciphertexts */
 void equalize_levels(Ciphertext &a, Ciphertext &b, Evaluator &evaluator, EncryptionParameters params) {
-	cout << "Creating shared context..." << endl;
 	SEALContext context(params);
 	auto tmp = make_shared<SEALContext>(context);
 
-	cout << "Getting chain index a..." << endl;
+	// cout << "Getting chain index a..." << endl;
 	int level_a = tmp->get_context_data(a.parms_id())->chain_index();
-	cout << "Getting chain index b..." << endl;
+	// cout << "Getting chain index b..." << endl;
 	int level_b = tmp->get_context_data(b.parms_id())->chain_index();
 
 	if (level_a > level_b) {
@@ -71,8 +70,6 @@ vector<Ciphertext> replicate(Ciphertext ctx, int n, double scale, CKKSEncoder &c
 	vector<Ciphertext> replicate_res(n);
 
 	for (size_t i = 0; i < n; i++) {
-		cout << "replicate ITERATION " << i << endl;
-		cout << endl;
 		vector<double> one_vector(n, 0.0);
 		for (size_t j; j < i; j++) {
 			one_vector[j] = 1;
@@ -88,15 +85,15 @@ vector<Ciphertext> replicate(Ciphertext ctx, int n, double scale, CKKSEncoder &c
 		Ciphertext temp_ciphertext;
 		equalize_levels(ctx, ct_one_vector, evaluator, params);
 		evaluator.multiply(ctx, ct_one_vector, temp_ciphertext);
-		print_Ciphertext_Info("temp_ciphertext", temp_ciphertext, tmp);
+		// print_Ciphertext_Info("temp_ciphertext", temp_ciphertext, tmp);
 		// Relinearization
 		evaluator.relinearize_inplace(temp_ciphertext, relin_keys);
 		// Rescale
 		evaluator.rescale_to_next_inplace(temp_ciphertext);
-		print_Ciphertext_Info("temp_ciphertext", temp_ciphertext, tmp);
+		// print_Ciphertext_Info("temp_ciphertext", temp_ciphertext, tmp);
 		// Manual rescale
 		temp_ciphertext.scale() = pow(2.0, 40);
-		print_Ciphertext_Info("temp_ciphertext", temp_ciphertext, tmp);
+		// print_Ciphertext_Info("temp_ciphertext", temp_ciphertext, tmp);
 
 		for (size_t j = 0; j < (int)log2(n); j++) {
 			// NOTE: may have to do a modulus switch here
@@ -105,7 +102,7 @@ vector<Ciphertext> replicate(Ciphertext ctx, int n, double scale, CKKSEncoder &c
 		}
 
 		replicate_res[i] = temp_ciphertext;
-		print_Ciphertext_Info("replicate_res[i]", replicate_res[i], tmp);
+		// print_Ciphertext_Info("replicate_res[i]", replicate_res[i], tmp);
 	}
 
 	return replicate_res;
@@ -116,52 +113,45 @@ Ciphertext mat_vec_mult(vector<Ciphertext> mat, Ciphertext vec, CKKSEncoder &ckk
 	SEALContext context(params);
 	auto tmp = make_shared<SEALContext>(context);
 
-	print_Ciphertext_Info("CTX", mat[0], tmp);
-	print_Ciphertext_Info("CTX", vec, tmp);
-
-	cout << "Beginning martix-vector multiplaction" << endl;
 	cout << "Replicating vec..." << endl;
 	vector<Ciphertext> replicated_vec = replicate(vec, mat.size(), pow(2, 40), ckks_encoder, encryptor, galois_keys, relin_keys, evaluator, params);
-	cout << "Successfully replicated vec" << endl;
 
 	Ciphertext result;
-	cout << "Multiplying mat with replicated vec..." << endl;
-	cout << endl;
 
     equalize_levels(mat[0], replicated_vec[0], evaluator, params);
-	print_Ciphertext_Info("mat[0]", mat[0], tmp);
-	print_Ciphertext_Info("replicated_vec[0]", replicated_vec[0], tmp);
+	// print_Ciphertext_Info("mat[0]", mat[0], tmp);
+	// print_Ciphertext_Info("replicated_vec[0]", replicated_vec[0], tmp);
 	evaluator.multiply(mat[0], replicated_vec[0], result);
-	print_Ciphertext_Info("result", result, tmp);
+	// print_Ciphertext_Info("result", result, tmp);
 	// Relin
 	evaluator.relinearize_inplace(result, relin_keys);
-	print_Ciphertext_Info("result", result, tmp);
+	// print_Ciphertext_Info("result", result, tmp);
 	// Rescale
 	evaluator.rescale_to_next_inplace(result);
-	print_Ciphertext_Info("result", result, tmp);
-	cout << endl;
+	// print_Ciphertext_Info("result", result, tmp);
+	// cout << endl;
 	result.scale() = pow(2.0, (int)log2(result.scale()));
 	for (size_t i = 1; i < replicated_vec.size(); i++) {
-		cout << "mat_vec_mult ITERATION " << i << endl;
+		// cout << "mat_vec_mult ITERATION " << i << endl;
 		equalize_levels(mat[i], replicated_vec[i], evaluator, params);
 		Ciphertext product;
 		evaluator.multiply(mat[i], replicated_vec[i], product);
-		print_Ciphertext_Info("product", product, tmp);
+		// print_Ciphertext_Info("product", product, tmp);
 		// Relin
 		evaluator.relinearize_inplace(product, relin_keys);
-		print_Ciphertext_Info("product", product, tmp);
+		// print_Ciphertext_Info("product", product, tmp);
 		// Rescale
 		evaluator.rescale_to_next_inplace(product);
-		print_Ciphertext_Info("product", product, tmp);
+		// print_Ciphertext_Info("product", product, tmp);
 		product.scale() = pow(2.0, 40);
-		print_Ciphertext_Info("product", product, tmp);
-		cout << endl;
+		// print_Ciphertext_Info("product", product, tmp);
+		// cout << endl;
 
 		evaluator.add_inplace(result, product);
-		print_Ciphertext_Info("result", result, tmp);
-		cout << endl;
+		// print_Ciphertext_Info("result", result, tmp);
+		// cout << endl;
 	}
-	print_Ciphertext_Info("result", result, tmp);
+	// print_Ciphertext_Info("result", result, tmp);
 	return result;
 }
 
@@ -234,7 +224,7 @@ Ciphertext horner_method(Ciphertext ctx, int degree, vector<double> coeffs, CKKS
     cout << "->" << __func__ << endl;
     cout << "->" << __LINE__ << endl;
 
-    print_Ciphertext_Info("CTX", ctx, tmp);
+    // print_Ciphertext_Info("CTX", ctx, tmp);
 
     int num_coeffs = 0;
     if (degree == 7) {
@@ -255,52 +245,38 @@ Ciphertext horner_method(Ciphertext ctx, int degree, vector<double> coeffs, CKKS
         counter += counter == 0 ? 1 : 2;
         index++;
     }
-    cout << "Done printing coefficients" << endl;
-
-    /*
-    for (size_t i = 0; i < degree + 1; i++)
-    {
-        // coeffs[i] = (double)rand() / RAND_MAX;
-        ckks_encoder.encode(coeffs[i], scale, plain_coeffs[i]);
-        cout << "x^" << counter << " * (" << coeffs[i] << ")"
-             << ", ";
-        counter += counter == 0 ? 1 : 2;
-    }
-    */ 
 
     cout << endl;
     // cout << "->" << __LINE__ << endl;
 
-    cout << "Calculating 1 / 8..." << endl;
     double one_eighth = 1 / 8;
     Plaintext pt_eighth;
     ckks_encoder.encode(one_eighth, scale, pt_eighth);
 
-    cout << "Encrypting 1 / 8..." << endl;
     Ciphertext ct_eighth;
     encryptor.encrypt(pt_eighth, ct_eighth);
-    cout << "Equalizing ciphertexts..." << endl;
+    // cout << "Equalizing ciphertexts..." << endl;
     equalize_levels(ctx, ct_eighth, evaluator, params);
-    cout << "Multiplying ciphertexts..." << endl;
+    // cout << "Multiplying ciphertexts..." << endl;
     evaluator.multiply_inplace(ctx, ct_eighth);
-    cout << "Relinearizing ciphertexts..." << endl;
+    // cout << "Relinearizing ciphertexts..." << endl;
     evaluator.relinearize_inplace(ctx, relin_keys);
-    cout << "Rescaling ctx..." << endl;
+    // cout << "Rescaling ctx..." << endl;
     ctx.scale() = scale;
 
-    cout << "Encrypting plain_coeffs[num_coeffs]..." << num_coeffs << endl;
+    // cout << "Encrypting plain_coeffs[num_coeffs]..." << num_coeffs << endl;
     Ciphertext temp;
     encryptor.encrypt(plain_coeffs[num_coeffs - 1], temp);
-    print_Ciphertext_Info("tmep", temp, tmp);
+    // print_Ciphertext_Info("tmep", temp, tmp);
 
     Plaintext plain_result;
     vector<double> result;
     // cout << "->" << __LINE__ << endl;
 
-    cout << "Running horner loop..." << endl;
+    // cout << "Running horner loop..." << endl;
     for (int i = num_coeffs - 1; i >= 0; i--)
     {
-    	cout << "ITERATION " << i << endl;
+    	// cout << "ITERATION " << i << endl;
         int ctx_level = tmp->get_context_data(ctx.parms_id())->chain_index();
         int temp_level = tmp->get_context_data(temp.parms_id())->chain_index();
         if (ctx_level > temp_level)
@@ -311,25 +287,27 @@ Ciphertext horner_method(Ciphertext ctx, int degree, vector<double> coeffs, CKKS
         {
             evaluator.mod_switch_to_inplace(temp, ctx.parms_id());
         }
-        evaluator.multiply_inplace(temp, ctx);
+        Ciphertext res;
+        evaluator.multiply(temp, ctx, res);
         // cout << "->" << __LINE__ << endl;
 
-        evaluator.relinearize_inplace(temp, relin_keys);
+        evaluator.relinearize_inplace(res, relin_keys);
 
-        evaluator.rescale_to_next_inplace(temp);
+        evaluator.rescale_to_next_inplace(res);
         // cout << "->" << __LINE__ << endl;
 
-        evaluator.mod_switch_to_inplace(plain_coeffs[i], temp.parms_id());
+        evaluator.mod_switch_to_inplace(plain_coeffs[i], res.parms_id());
 
         // Manual rescale
-        temp.scale() = pow(2.0, 40);
+        res.scale() = pow(2.0, 40);
         // cout << "->" << __LINE__ << endl;
 
-        evaluator.add_plain_inplace(temp, plain_coeffs[i]);
+        evaluator.add_plain_inplace(res, plain_coeffs[i]);
+        temp = res;
     }
     // cout << "->" << __LINE__ << endl;
 
-    print_Ciphertext_Info("temp", temp, tmp);
+    // print_Ciphertext_Info("temp", temp, tmp);
 
     return temp;
 }
@@ -339,25 +317,23 @@ vector<Ciphertext> hessian_approx(vector<Ciphertext> ctx, double scale, CKKSEnco
 	SEALContext context(params);
     auto tmp = make_shared<SEALContext>(context);
 
-	vector<Ciphertext> result;
+    double coeff = 4;
+	Plaintext pt_coeff;
+	ckks_encoder.encode(coeff, scale, pt_coeff);
+
+	Ciphertext ct_coeff;
+	encryptor.encrypt(pt_coeff, ct_coeff);
+
+
 	int num_rows = ctx.size();
+	vector<Ciphertext> result(num_rows);
 	for (size_t i = 0; i < num_rows; i++) {
-		double coeff = 4;
-		Plaintext pt_coeff;
-		ckks_encoder.encode(coeff, scale, pt_coeff);
-
-		Ciphertext ct_coeff;
-		encryptor.encrypt(pt_coeff, ct_coeff);
-		print_Ciphertext_Info("ct_coeff", ct_coeff, tmp);
-		print_Ciphertext_Info("ctx[i]", ctx[i], tmp);
-
-		equalize_levels(ctx[i], ct_coeff, evaluator, params);
-
 		evaluator.multiply(ctx[i], ct_coeff, result[i]);
 
 		evaluator.relinearize_inplace(result[i], relin_keys);
 
 		result[i].scale() = pow(2.0, (int)log2(result[i].scale()));
+		result[i] = ct_coeff;
 	}
 
 	return result;
@@ -375,48 +351,35 @@ Ciphertext train_model(vector<Ciphertext> X, Ciphertext weights, Ciphertext y, v
 	vector<double> coeffs = {0.5, 1.73496, -4.19407, 5.43402, -2.50739};
 	Ciphertext curr_weights = weights;
 	for (size_t k = 0; k < ITERS; k++) {
-		/*
 		Ciphertext mat_vec_prod = mat_vec_mult(X, curr_weights, ckks_encoder, encryptor, galois_keys, relin_keys, evaluator, params);
-		cout << "MatVecProd scale: " << mat_vec_prod.scale() << endl;
 		
 		Ciphertext p = horner_method(mat_vec_prod, 7, coeffs, ckks_encoder, scale, evaluator, encryptor, relin_keys, params);
 		print_Ciphertext_Info("p", p, tmp);
 		print_Ciphertext_Info("y", y, tmp);
 		
 		Ciphertext y_minus_p;
-		cout << "Equalizing y_minus_p and p..." << endl;
 		equalize_levels(y, p, evaluator, params);
-		cout << "Evaluating y - p" << endl;
 		evaluator.sub(y, p, y_minus_p);
 
 		Ciphertext g = mat_vec_mult(xt, y_minus_p, ckks_encoder, encryptor, galois_keys, relin_keys, evaluator, params);
-		*/
+		
 		vector<Ciphertext> H = hessian_approx(xtxi, scale, ckks_encoder, encryptor, evaluator, relin_keys, params);
 		print_Ciphertext_Info("H", H[0], tmp);
-		// print_Ciphertext_Info("g", g, tmp);
+		print_Ciphertext_Info("g", g, tmp);
 		print_Ciphertext_Info("curr_weights", curr_weights, tmp);
 
-		int one = 1;
-		Plaintext pt_one1;
-		Plaintext pt_one2;
-		ckks_encoder.encode(one, pow(2.0, 40), pt_one1);
-		ckks_encoder.encode(one, pow(2.0, 40), pt_one2);
+		Ciphertext hg = mat_vec_mult(H, g, ckks_encoder, encryptor, galois_keys, relin_keys, evaluator, params);
 
-		Ciphertext ct_one1;
-		Ciphertext ct_one2;
-		encryptor.encrypt(pt_one1, ct_one1);
-		encryptor.encrypt(pt_one2, ct_one2);
+		equalize_levels(curr_weights, hg, evaluator, params);
 
-		print_Ciphertext_Info("ct_one1", ct_one1, tmp);
-		print_Ciphertext_Info("ct_one2", ct_one2, tmp);
+		Ciphertext new_weights;
+		evaluator.sub(curr_weights, hg, new_weights);
 
-		Ciphertext result;
-		evaluator.multiply(ct_one1, ct_one2, result);
-		print_Ciphertext_Info("ct_one1", ct_one1, tmp);
-		print_Ciphertext_Info("ct_one2", ct_one2, tmp);
+		curr_weights = new_weights;
 
-		break;
 	}
+
+	return curr_weights;
 }
 
 int main() {
@@ -430,7 +393,7 @@ int main() {
 	size_t poly_modulus_degree = 32768;
 	cout << "Bound for poly_modulus_degree of size " << poly_modulus_degree << ": " << CoeffModulus::MaxBitCount(poly_modulus_degree) << endl;
     parms.set_poly_modulus_degree(poly_modulus_degree);
-    parms.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree, {60, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 60}));
+    parms.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree, {60, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 60}));
 
 	// Set scale
     double scale = pow(2.0, 40);
@@ -461,7 +424,6 @@ int main() {
 	// Read in SNP data from a file. Store as 2-dimensional vector of strings. 
 	string file_name = "test_data.csv";
 	vector<vector<string>> s_data = csv_to_matrix(file_name);
-	cout << "CSV successfully read in" << endl;
 
 	// Turn into 2-dimensional vector of doubles
 	cout << "Converting string matrix to double matrix..." << endl;
@@ -474,23 +436,18 @@ int main() {
 			A(i, j) = d_data[i][j];
 		}
 	}
-	cout << "Successfully converted string matrix to double matrix" << endl;
 	cout << "Transposing double matrix..." << endl;
 	// Transpose the data because it needs to be encrypt as a CP matrix
 	vector<vector<double>> d_data_tranpsose = transpose_matrix(d_data);
-	cout << "Transposed double matrix with transpose_matrix()" << endl;
 	cout << "Transposing double matrix using armadillo..." << endl;
 	mat A_t = A.t();
-	cout << "Transposed double matrix with armadillo" << endl;
 	cout << "Finding A_t * A using armadillo..." << endl;
 
 	// vector<vector<double>> d_data_transpose_inv = pinv(d_data_tranpsose, 0.1);
 
 	mat xtx = A_t * A;
-	cout << "Found A_t * A with armadillo" << endl;
 	cout << "Finding A_t_A inverse using armadillo..." << endl;
 	mat xtxi = pinv(xtx);
-	cout << "Found A_t * A with armadillo" << endl;
 	cout << "Finding A_t_A inverse using armadillo..." << endl;
 
 	typedef vector<double> stdvec;
@@ -503,7 +460,6 @@ int main() {
 		xtxi_[i] = conv_to<stdvec>::from(xtxi.row(i));  
 		xt[i] = conv_to<stdvec>::from(A_t.row(i));
 	}
-	cout << "Found inverse with armadillo" << endl;
 	cout << "Generating weights and outcomes vectors..." << endl;
 
 	// Weights 
@@ -516,7 +472,6 @@ int main() {
 	} 
 
 	//--------- Encode Data ---------//
-	cout << "Found weights and outcomes vectors" << endl;
 	cout << "Encoding data..." << endl;
 	// Encode the data using scale
 	vector<Plaintext> pt_data(rows);
@@ -533,7 +488,6 @@ int main() {
 
 	Plaintext pt_outcomes;
 	ckks_encoder.encode(outcomes, scale, pt_outcomes);
-	cout << "Finished encoding data" << endl;
 
 	//--------- Encrypt Data ---------//
 	cout << "Encrypting data..." << endl;
@@ -552,14 +506,13 @@ int main() {
 
 	Ciphertext ct_outcomes;
 	encryptor.encrypt(pt_outcomes, ct_outcomes);
-	cout << "Finished encrypting data" << endl;
 
 	// Check scales
-	cout << "Checking scales..." << endl;
-	cout << "|________ Starting Scales ________|" << endl;
-	cout << "data: " << ct_data[0].scale() << endl;
-	cout << "weights: " << ct_weights.scale() << endl;
-	cout << "outcomes: " << ct_outcomes.scale() << endl;
+	// cout << "Checking scales..." << endl;
+	// cout << "|________ Starting Scales ________|" << endl;
+	// cout << "data: " << ct_data[0].scale() << endl;
+	// cout << "weights: " << ct_weights.scale() << endl;
+	// cout << "outcomes: " << ct_outcomes.scale() << endl;
 
 	cout << "Beginning model training..." << endl;
 	Ciphertext new_weights = train_model(ct_data, ct_weights, ct_outcomes, ct_xtxi, ct_xt, ckks_encoder, encryptor, evaluator, gal_keys, relin_keys, parms);

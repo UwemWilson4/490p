@@ -111,6 +111,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named seal_tests
+
+# Build rule for target.
+seal_tests: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 seal_tests
+.PHONY : seal_tests
+
+# fast build rule for target.
+seal_tests/fast:
+	$(MAKE) -f CMakeFiles/seal_tests.dir/build.make CMakeFiles/seal_tests.dir/build
+.PHONY : seal_tests/fast
+
+#=============================================================================
 # Target rules for targets named test
 
 # Build rule for target.
@@ -150,6 +163,33 @@ log_reg.cpp.s:
 	$(MAKE) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/log_reg.cpp.s
 .PHONY : log_reg.cpp.s
 
+seal_tests.o: seal_tests.cpp.o
+
+.PHONY : seal_tests.o
+
+# target to build an object file
+seal_tests.cpp.o:
+	$(MAKE) -f CMakeFiles/seal_tests.dir/build.make CMakeFiles/seal_tests.dir/seal_tests.cpp.o
+.PHONY : seal_tests.cpp.o
+
+seal_tests.i: seal_tests.cpp.i
+
+.PHONY : seal_tests.i
+
+# target to preprocess a source file
+seal_tests.cpp.i:
+	$(MAKE) -f CMakeFiles/seal_tests.dir/build.make CMakeFiles/seal_tests.dir/seal_tests.cpp.i
+.PHONY : seal_tests.cpp.i
+
+seal_tests.s: seal_tests.cpp.s
+
+.PHONY : seal_tests.s
+
+# target to generate assembly for a file
+seal_tests.cpp.s:
+	$(MAKE) -f CMakeFiles/seal_tests.dir/build.make CMakeFiles/seal_tests.dir/seal_tests.cpp.s
+.PHONY : seal_tests.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -157,11 +197,15 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... rebuild_cache"
+	@echo "... seal_tests"
 	@echo "... edit_cache"
 	@echo "... test"
 	@echo "... log_reg.o"
 	@echo "... log_reg.i"
 	@echo "... log_reg.s"
+	@echo "... seal_tests.o"
+	@echo "... seal_tests.i"
+	@echo "... seal_tests.s"
 .PHONY : help
 
 
