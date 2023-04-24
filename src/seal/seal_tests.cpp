@@ -123,8 +123,8 @@ void test_vector_multiplication(vector<ms_duration> &results_vec, vector<double>
 
     Ciphertext ct_result;
     Ciphertext ct_rand_vals;
-    encryptor.encrypt(pt_rand_vals, ct_rand_vals);
     encryptor.encrypt(pt_result, ct_result);
+    encryptor.encrypt(pt_rand_vals, ct_rand_vals);
     for (size_t trial = 0; trial < NUM_TRIALS; trial++) {
     	auto start = high_resolution_clock::now();
     	for (size_t i = 0; i < ITERS; i++) {
