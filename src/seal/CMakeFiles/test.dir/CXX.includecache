@@ -27,6 +27,8 @@ armadillo
 -
 stdlib.h
 -
+chrono
+-
 log_reg.h
 /home/uwem/Desktop/490/490p/src/seal/log_reg.h
 helpers.h

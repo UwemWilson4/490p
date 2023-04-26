@@ -1,5 +1,6 @@
 import math
 import random
+import time
 import numpy as np
 from numpy.linalg import pinv, det
 from eva import *
@@ -97,7 +98,7 @@ def he_log_reg(input_matrix, xtxi_t, beta_weights, y):
 		xtxi_cols = [Input(f'xtxi_{i}') for i in range(d)]
 		hessian_inverse_approx = [i * 4 for i in xtxi_cols]
 		# Algorithm for logistic regression
-		for k in range(2):
+		for k in range(1):
 			# Replicate the beta_weights input
 			num_weights = len(beta_weights)
 			# For multiplications involving B
@@ -151,8 +152,8 @@ def he_log_reg(input_matrix, xtxi_t, beta_weights, y):
 			Output('new_beta', new_beta_weights)
 			B = new_beta_weights
 			Output('beta_weights_final', B)
-			print(B)
-			print(f'Iteration {k}')
+			# print(B)
+			# print(f'Iteration {k}')
 		
 
 	# Set parameters
@@ -297,7 +298,7 @@ def hom_gwas(X, beta, y, p, xt_x_i, xt, S):
 		inputs[f's{index}'] = row
 	for index, row in enumerate(xt_x_i):
 		inputs[f'xtxi_{index}'] = row.tolist()[0]
-	print(inputs)
+	#print(inputs)
 
 	encInputs = public_ctx.encrypt(inputs, signature)
 	encOutputs = public_ctx.execute(compiled_gwas, encInputs)
@@ -305,17 +306,17 @@ def hom_gwas(X, beta, y, p, xt_x_i, xt, S):
 
 	# Run the program on unencrypted inputs to get reference results
 	reference = evaluate(compiled_gwas, inputs)
-	print("Evaluated output:")
-	print(reference['numerator'])
-	print(reference['denominator'])
-	print("\n\n")
+	#print("Evaluated output:")
+	#print(reference['numerator'])
+	#print(reference['denominator'])
+	#print("\n\n")
 
 	# Print actual outputs
-	print("Actual output:")
-	print(outputs['numerator'])
-	print(outputs['denominator'])
+	#print("Actual output:")
+	#print(outputs['numerator'])
+	#print(outputs['denominator'])
 	#print(outputs['test2'])
-	print("\n\n")
+	#print("\n\n")
 
 
 def test_no_enc():
@@ -328,7 +329,7 @@ def test_no_enc():
 	num_rows = len(data)
 	num_cols = data.shape[1]
 	beta_weights = np.zeros((num_cols, 1), dtype=int)
-	print(f'num_rows: {num_rows}\nnum_cols: {num_cols}\nbeta_weights: {beta_weights}\nY: {y_m}\n')
+	#print(f'num_rows: {num_rows}\nnum_cols: {num_cols}\nbeta_weights: {beta_weights}\nY: {y_m}\n')
 
 	for i in range(num_rows):
 		p = np.dot(data, beta_weights)
@@ -338,7 +339,7 @@ def test_no_enc():
 		b_new = beta_weights - (np.matmul(h_approx, g))
 		beta_weights = b_new
 
-	print(beta_weights)
+	#print(beta_weights)
 
 
 if __name__ == '__main__':
@@ -346,18 +347,18 @@ if __name__ == '__main__':
 	matA = [[random.randint(0, 3) for _ in range(d)] for _ in range(d)]
 	matA = np.matrix(matA)
 	matB = [[random.randint(0, 3) for _ in range(d)] for _ in range(d)]
-	for i in range(len(matA)):
-		print(matA[i])
 		
 	print("Newton-Raphson with no encryption:")
-	#test_no_enc()
-	print("\n\n")
 
 	data = gen_fake_data()
 	beta_weights = [0 for i in range(d)]
 	y = [random.randint(0, 1) for _ in range(d)]
-	print("Newton-Raphson with encryption:")
+	#print("Newton-Raphson with encryption:")
 	# The the transpose to more easily get to the cols
 	xtxi_t = pinv(np.matmul(matA.T, matA)).T
+	start = time.perf_counter()
 	outputs = he_log_reg(matA, xtxi_t, beta_weights, y)
+	end = time.perf_counter()
+	duration = (end - start) * (10**6)
+	print(f'duration: {duration}')
 	hom_gwas(matA, outputs['beta_weights_final'], y, outputs['SigmoidRes'], xtxi_t, matA.T, matB)

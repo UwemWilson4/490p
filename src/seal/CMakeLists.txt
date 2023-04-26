@@ -12,12 +12,6 @@ add_executable(seal_tests seal_tests.cpp)
 
 find_package(SEAL 3.6.4 REQUIRED)
 find_package(LAPACK REQUIRED)
-find_package(BLAS REQUIRED)
-
-if(LAPACK_FOUND AND BLAS_FOUND)
-   set(lapackblas_libraries ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
-   message(here : '${LAPACK_LIBRARIES}, ${BLAS_LIBRARIES}')
-endif()
 
 target_link_libraries(test SEAL::seal)
 target_link_libraries(test 'armadillo')

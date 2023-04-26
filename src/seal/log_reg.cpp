@@ -2,16 +2,20 @@
 #include <vector>
 #include <armadillo>
 #include <stdlib.h>
+#include <chrono>
 
 #include "log_reg.h"
 #include "helpers.h"
 
-#define ITERS 2
+#define ITERS 1
 
 
 using namespace std;
 using namespace arma;
 using namespace seal;
+using namespace std::chrono;
+
+typedef std::chrono::duration<long, std::ratio<1, 1000000> > ms_duration;
 
 /* Prints information about Ciphertext's parameters */
 void print_Ciphertext_Info(string ctx_name, Ciphertext ctx, shared_ptr<SEALContext> context)
@@ -33,7 +37,7 @@ void print_Ciphertext_Info(string ctx_name, Ciphertext ctx, shared_ptr<SEALConte
 void equalize_levels(Ciphertext &a, Ciphertext &b, Evaluator &evaluator, EncryptionParameters params) {
 	SEALContext context(params);
 	auto tmp = make_shared<SEALContext>(context);
-
+	auto start = high_resolution_clock::now();
 	// cout << "Getting chain index a..." << endl;
 	int level_a = tmp->get_context_data(a.parms_id())->chain_index();
 	// cout << "Getting chain index b..." << endl;
@@ -50,13 +54,20 @@ void equalize_levels(Ciphertext &a, Ciphertext &b, Evaluator &evaluator, Encrypt
 		}
 		evaluator.mod_switch_to_inplace(b, a.parms_id());
 	}
+	auto end = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(end - start);
+    cout << __func__ << ": " << duration.count() << endl;
 }
 
 /* Rotates a Ciphertext by k */
 Ciphertext rotate_ciphertext(Ciphertext ctx, int k, GaloisKeys galois_keys, Evaluator &evaluator)
 {
+	auto start = high_resolution_clock::now();
 	Ciphertext rotated;
 	evaluator.rotate_vector(ctx, k, galois_keys, rotated);
+	auto end = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(end - start);
+    cout << __func__ << ": " << duration.count() << endl;
 
 	return rotated;
 }
@@ -65,7 +76,7 @@ vector<Ciphertext> replicate(Ciphertext ctx, int n, double scale, CKKSEncoder &c
 {
 	SEALContext context(params);
 	auto tmp = make_shared<SEALContext>(context);
-
+	auto start = high_resolution_clock::now();
 	print_Ciphertext_Info("CTX", ctx, tmp);
 	vector<Ciphertext> replicate_res(n);
 
@@ -104,7 +115,9 @@ vector<Ciphertext> replicate(Ciphertext ctx, int n, double scale, CKKSEncoder &c
 		replicate_res[i] = temp_ciphertext;
 		// print_Ciphertext_Info("replicate_res[i]", replicate_res[i], tmp);
 	}
-
+	auto end = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(end - start);
+    cout << __func__ << ": " << duration.count() << endl;
 	return replicate_res;
 }
 
@@ -112,7 +125,7 @@ vector<Ciphertext> replicate(Ciphertext ctx, int n, double scale, CKKSEncoder &c
 Ciphertext mat_vec_mult(vector<Ciphertext> mat, Ciphertext vec, CKKSEncoder &ckks_encoder, Encryptor &encryptor, GaloisKeys galois_keys, RelinKeys relin_keys, Evaluator &evaluator, EncryptionParameters params) {
 	SEALContext context(params);
 	auto tmp = make_shared<SEALContext>(context);
-
+	auto start = high_resolution_clock::now();
 	cout << "Replicating vec..." << endl;
 	vector<Ciphertext> replicated_vec = replicate(vec, mat.size(), pow(2, 40), ckks_encoder, encryptor, galois_keys, relin_keys, evaluator, params);
 
@@ -152,6 +165,9 @@ Ciphertext mat_vec_mult(vector<Ciphertext> mat, Ciphertext vec, CKKSEncoder &ckk
 		// cout << endl;
 	}
 	// print_Ciphertext_Info("result", result, tmp);
+	auto end = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(end - start);
+    cout << __func__ << ": " << duration.count() << endl;
 	return result;
 }
 
@@ -225,7 +241,7 @@ Ciphertext horner_method(Ciphertext ctx, int degree, vector<double> coeffs, CKKS
     cout << "->" << __LINE__ << endl;
 
     // print_Ciphertext_Info("CTX", ctx, tmp);
-
+    auto start = high_resolution_clock::now();
     int num_coeffs = 0;
     if (degree == 7) {
     	num_coeffs = 5;
@@ -308,15 +324,15 @@ Ciphertext horner_method(Ciphertext ctx, int degree, vector<double> coeffs, CKKS
     // cout << "->" << __LINE__ << endl;
 
     // print_Ciphertext_Info("temp", temp, tmp);
-
+    auto end = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(end - start);
+    cout << __func__ << ": " << duration.count() << endl;
     return temp;
 }
 
 vector<Ciphertext> hessian_approx(vector<Ciphertext> ctx, double scale, CKKSEncoder &ckks_encoder, Encryptor &encryptor, Evaluator &evaluator, RelinKeys relin_keys, EncryptionParameters params) 
 {
-	SEALContext context(params);
-    auto tmp = make_shared<SEALContext>(context);
-
+    auto start = high_resolution_clock::now();
     double coeff = 4;
 	Plaintext pt_coeff;
 	ckks_encoder.encode(coeff, scale, pt_coeff);
@@ -335,6 +351,9 @@ vector<Ciphertext> hessian_approx(vector<Ciphertext> ctx, double scale, CKKSEnco
 		result[i].scale() = pow(2.0, (int)log2(result[i].scale()));
 		result[i] = ct_coeff;
 	}
+	auto end = high_resolution_clock::now();
+	auto duration = duration_cast<microseconds>(end - start);
+	cout << __func__ << ": " << duration.count() << endl;
 
 	return result;
 }
@@ -515,6 +534,10 @@ int main() {
 	// cout << "outcomes: " << ct_outcomes.scale() << endl;
 
 	cout << "Beginning model training..." << endl;
+	auto start = high_resolution_clock::now();
 	Ciphertext new_weights = train_model(ct_data, ct_weights, ct_outcomes, ct_xtxi, ct_xt, ckks_encoder, encryptor, evaluator, gal_keys, relin_keys, parms);
+	auto end = high_resolution_clock::now();
 
+	ms_duration duration = duration_cast<microseconds>(end - start);
+	cout << "Runtime: " << duration.count() << endl;
 }
