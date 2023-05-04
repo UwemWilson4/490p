@@ -190,7 +190,6 @@ def he_log_reg(input_matrix, xtxi_t, beta_weights, y):
 	# Print actual outputs
 	print("Actual output:")
 	print(outputs['beta_weights_final'])
-	#print(outputs['test2'])
 	print("\n\n")
 
 	return outputs
@@ -298,7 +297,6 @@ def hom_gwas(X, beta, y, p, xt_x_i, xt, S):
 		inputs[f's{index}'] = row
 	for index, row in enumerate(xt_x_i):
 		inputs[f'xtxi_{index}'] = row.tolist()[0]
-	#print(inputs)
 
 	encInputs = public_ctx.encrypt(inputs, signature)
 	encOutputs = public_ctx.execute(compiled_gwas, encInputs)
@@ -306,40 +304,6 @@ def hom_gwas(X, beta, y, p, xt_x_i, xt, S):
 
 	# Run the program on unencrypted inputs to get reference results
 	reference = evaluate(compiled_gwas, inputs)
-	#print("Evaluated output:")
-	#print(reference['numerator'])
-	#print(reference['denominator'])
-	#print("\n\n")
-
-	# Print actual outputs
-	#print("Actual output:")
-	#print(outputs['numerator'])
-	#print(outputs['denominator'])
-	#print(outputs['test2'])
-	#print("\n\n")
-
-
-def test_no_enc():
-	# generate fake data and outcome vector
-	data = gen_fake_data()
-	data = data.T
-	#print(data)
-	y = [1, 1, 0, 0, 1, 1, 0, 0]
-	y_m = np.reshape(np.matrix(y, dtype=int), (len(data), 1))
-	num_rows = len(data)
-	num_cols = data.shape[1]
-	beta_weights = np.zeros((num_cols, 1), dtype=int)
-	#print(f'num_rows: {num_rows}\nnum_cols: {num_cols}\nbeta_weights: {beta_weights}\nY: {y_m}\n')
-
-	for i in range(num_rows):
-		p = np.dot(data, beta_weights)
-		g = np.matmul(data.T, (y_m - p))
-		xt_x = np.matmul(data.T, data)
-		h_approx = 4 * pinv(np.matmul(data.T, data))
-		b_new = beta_weights - (np.matmul(h_approx, g))
-		beta_weights = b_new
-
-	#print(beta_weights)
 
 
 if __name__ == '__main__':
@@ -348,12 +312,11 @@ if __name__ == '__main__':
 	matA = np.matrix(matA)
 	matB = [[random.randint(0, 3) for _ in range(d)] for _ in range(d)]
 		
-	print("Newton-Raphson with no encryption:")
 
 	data = gen_fake_data()
 	beta_weights = [0 for i in range(d)]
 	y = [random.randint(0, 1) for _ in range(d)]
-	#print("Newton-Raphson with encryption:")
+
 	# The the transpose to more easily get to the cols
 	xtxi_t = pinv(np.matmul(matA.T, matA)).T
 	start = time.perf_counter()
