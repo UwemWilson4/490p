@@ -111,6 +111,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named example
+
+# Build rule for target.
+example: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 example
+.PHONY : example
+
+# fast build rule for target.
+example/fast:
+	$(MAKE) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/build
+.PHONY : example/fast
+
+#=============================================================================
 # Target rules for targets named seal_tests
 
 # Build rule for target.
@@ -163,6 +176,33 @@ log_reg.cpp.s:
 	$(MAKE) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/log_reg.cpp.s
 .PHONY : log_reg.cpp.s
 
+seal_example.o: seal_example.cpp.o
+
+.PHONY : seal_example.o
+
+# target to build an object file
+seal_example.cpp.o:
+	$(MAKE) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/seal_example.cpp.o
+.PHONY : seal_example.cpp.o
+
+seal_example.i: seal_example.cpp.i
+
+.PHONY : seal_example.i
+
+# target to preprocess a source file
+seal_example.cpp.i:
+	$(MAKE) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/seal_example.cpp.i
+.PHONY : seal_example.cpp.i
+
+seal_example.s: seal_example.cpp.s
+
+.PHONY : seal_example.s
+
+# target to generate assembly for a file
+seal_example.cpp.s:
+	$(MAKE) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/seal_example.cpp.s
+.PHONY : seal_example.cpp.s
+
 seal_tests.o: seal_tests.cpp.o
 
 .PHONY : seal_tests.o
@@ -197,12 +237,16 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... rebuild_cache"
+	@echo "... example"
 	@echo "... seal_tests"
 	@echo "... edit_cache"
 	@echo "... test"
 	@echo "... log_reg.o"
 	@echo "... log_reg.i"
 	@echo "... log_reg.s"
+	@echo "... seal_example.o"
+	@echo "... seal_example.i"
+	@echo "... seal_example.s"
 	@echo "... seal_tests.o"
 	@echo "... seal_tests.i"
 	@echo "... seal_tests.s"

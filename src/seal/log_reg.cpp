@@ -37,6 +37,7 @@ void print_Ciphertext_Info(string ctx_name, Ciphertext ctx, shared_ptr<SEALConte
 void equalize_levels(Ciphertext &a, Ciphertext &b, Evaluator &evaluator, EncryptionParameters params) {
 	SEALContext context(params);
 	auto tmp = make_shared<SEALContext>(context);
+
 	auto start = high_resolution_clock::now();
 	// cout << "Getting chain index a..." << endl;
 	int level_a = tmp->get_context_data(a.parms_id())->chain_index();
@@ -72,6 +73,9 @@ Ciphertext rotate_ciphertext(Ciphertext ctx, int k, GaloisKeys galois_keys, Eval
 	return rotated;
 }
 
+/* The replicate function takes a vector encrypted as a Ciphertext and outputs a vector
+	of Ciphertexts, where each Ciphertext is a replicate of ctx. This corresponds to a what
+	would be a matrix with n columns that are all identical. */
 vector<Ciphertext> replicate(Ciphertext ctx, int n, double scale, CKKSEncoder &ckks_encoder, Encryptor &encryptor, GaloisKeys galois_keys, RelinKeys relin_keys, Evaluator &evaluator, EncryptionParameters params)
 {
 	SEALContext context(params);
@@ -132,39 +136,30 @@ Ciphertext mat_vec_mult(vector<Ciphertext> mat, Ciphertext vec, CKKSEncoder &ckk
 	Ciphertext result;
 
     equalize_levels(mat[0], replicated_vec[0], evaluator, params);
-	// print_Ciphertext_Info("mat[0]", mat[0], tmp);
-	// print_Ciphertext_Info("replicated_vec[0]", replicated_vec[0], tmp);
 	evaluator.multiply(mat[0], replicated_vec[0], result);
-	// print_Ciphertext_Info("result", result, tmp);
+
 	// Relin
 	evaluator.relinearize_inplace(result, relin_keys);
-	// print_Ciphertext_Info("result", result, tmp);
+	
 	// Rescale
 	evaluator.rescale_to_next_inplace(result);
-	// print_Ciphertext_Info("result", result, tmp);
-	// cout << endl;
 	result.scale() = pow(2.0, (int)log2(result.scale()));
+	
 	for (size_t i = 1; i < replicated_vec.size(); i++) {
 		// cout << "mat_vec_mult ITERATION " << i << endl;
 		equalize_levels(mat[i], replicated_vec[i], evaluator, params);
 		Ciphertext product;
 		evaluator.multiply(mat[i], replicated_vec[i], product);
-		// print_Ciphertext_Info("product", product, tmp);
+
 		// Relin
 		evaluator.relinearize_inplace(product, relin_keys);
-		// print_Ciphertext_Info("product", product, tmp);
+
 		// Rescale
 		evaluator.rescale_to_next_inplace(product);
-		// print_Ciphertext_Info("product", product, tmp);
 		product.scale() = pow(2.0, 40);
-		// print_Ciphertext_Info("product", product, tmp);
-		// cout << endl;
 
 		evaluator.add_inplace(result, product);
-		// print_Ciphertext_Info("result", result, tmp);
-		// cout << endl;
 	}
-	// print_Ciphertext_Info("result", result, tmp);
 	auto end = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(end - start);
     cout << __func__ << ": " << duration.count() << endl;
@@ -185,6 +180,7 @@ Ciphertext dot_prod(Ciphertext a, Ciphertext b, int num_rows, CKKSEncoder &ckks_
 	return c;
 }
 
+/* Performs matrix-vector multiplication for a row-packed matrix (not used)*/
 Ciphertext rp_mat_vec_mult(vector<Ciphertext> A, Ciphertext b, int num_rows, double scale, CKKSEncoder &ckks_encoder, Encryptor &encryptor, GaloisKeys galois_keys, RelinKeys relin_keys, Evaluator &evaluator)
 {
 	vector<double> result(num_rows, 0);
@@ -219,7 +215,7 @@ Ciphertext rp_mat_vec_mult(vector<Ciphertext> A, Ciphertext b, int num_rows, dou
 	return ct_result;
 }
 
-/* Performs matrix multiplication between two column-packed matrices. */
+/* Performs matrix multiplication between two column-packed matrices. (not used) */
 vector<Ciphertext> cp_mat_mult(vector<Ciphertext> matA, vector<Ciphertext> matB, int n, double scale, CKKSEncoder &ckks_encoder, Encryptor &encryptor, GaloisKeys galois_keys, RelinKeys relin_keys, Evaluator &evaluator, EncryptionParameters params)
 {
 	vector<Ciphertext> result(n);
@@ -330,6 +326,7 @@ Ciphertext horner_method(Ciphertext ctx, int degree, vector<double> coeffs, CKKS
     return temp;
 }
 
+/* Finds the hessian approximation for an encrypted matrix */
 vector<Ciphertext> hessian_approx(vector<Ciphertext> ctx, double scale, CKKSEncoder &ckks_encoder, Encryptor &encryptor, Evaluator &evaluator, RelinKeys relin_keys, EncryptionParameters params) 
 {
     auto start = high_resolution_clock::now();
@@ -358,6 +355,7 @@ vector<Ciphertext> hessian_approx(vector<Ciphertext> ctx, double scale, CKKSEnco
 	return result;
 }
 
+/* Trains a logistic regression model */
 Ciphertext train_model(vector<Ciphertext> X, Ciphertext weights, Ciphertext y, vector<Ciphertext> xtxi, vector<Ciphertext> xt, CKKSEncoder &ckks_encoder, Encryptor &encryptor, Evaluator &evaluator, GaloisKeys galois_keys, RelinKeys relin_keys, EncryptionParameters params)
 {
 	SEALContext context(params);

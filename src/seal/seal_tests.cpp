@@ -9,6 +9,7 @@ using namespace std::chrono;
 using namespace seal;
 
 typedef std::chrono::duration<long, std::ratio<1, 1000000> > ms_duration;
+
 void test_simple_addition(vector<ms_duration> &results_vec, vector<double> rand_vals, double scale, CKKSEncoder &ckks_encoder, Encryptor &encryptor, Evaluator &evaluator) {
 	double a = 0;
     double result = 0;

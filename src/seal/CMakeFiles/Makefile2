@@ -53,6 +53,7 @@ CMAKE_BINARY_DIR = /home/uwem/Desktop/490/490p/src/seal
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
+all: CMakeFiles/example.dir/all
 all: CMakeFiles/seal_tests.dir/all
 all: CMakeFiles/test.dir/all
 
@@ -64,10 +65,38 @@ preinstall:
 .PHONY : preinstall
 
 # The main recursive "clean" target.
+clean: CMakeFiles/example.dir/clean
 clean: CMakeFiles/seal_tests.dir/clean
 clean: CMakeFiles/test.dir/clean
 
 .PHONY : clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/example.dir
+
+# All Build rule for target.
+CMakeFiles/example.dir/all:
+	$(MAKE) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/depend
+	$(MAKE) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/uwem/Desktop/490/490p/src/seal/CMakeFiles --progress-num=1,2 "Built target example"
+.PHONY : CMakeFiles/example.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/example.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/uwem/Desktop/490/490p/src/seal/CMakeFiles 2
+	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/example.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/uwem/Desktop/490/490p/src/seal/CMakeFiles 0
+.PHONY : CMakeFiles/example.dir/rule
+
+# Convenience name for target.
+example: CMakeFiles/example.dir/rule
+
+.PHONY : example
+
+# clean rule for target.
+CMakeFiles/example.dir/clean:
+	$(MAKE) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/clean
+.PHONY : CMakeFiles/example.dir/clean
 
 #=============================================================================
 # Target rules for target CMakeFiles/seal_tests.dir
@@ -76,7 +105,7 @@ clean: CMakeFiles/test.dir/clean
 CMakeFiles/seal_tests.dir/all:
 	$(MAKE) -f CMakeFiles/seal_tests.dir/build.make CMakeFiles/seal_tests.dir/depend
 	$(MAKE) -f CMakeFiles/seal_tests.dir/build.make CMakeFiles/seal_tests.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/uwem/Desktop/490/490p/src/seal/CMakeFiles --progress-num=1,2 "Built target seal_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/uwem/Desktop/490/490p/src/seal/CMakeFiles --progress-num=3,4 "Built target seal_tests"
 .PHONY : CMakeFiles/seal_tests.dir/all
 
 # Build rule for subdir invocation for target.
@@ -103,7 +132,7 @@ CMakeFiles/seal_tests.dir/clean:
 CMakeFiles/test.dir/all:
 	$(MAKE) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/depend
 	$(MAKE) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/uwem/Desktop/490/490p/src/seal/CMakeFiles --progress-num=3,4 "Built target test"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/uwem/Desktop/490/490p/src/seal/CMakeFiles --progress-num=5,6 "Built target test"
 .PHONY : CMakeFiles/test.dir/all
 
 # Build rule for subdir invocation for target.
